@@ -33,7 +33,7 @@ select = dplyr::select
 source(here::here("scripts", "scripts_functions", "figure_info.R"))
 
 #datver <- "20230724"
-dataversion <- paste0("Data_", datver)
+#dataversion <- paste0("Data_", datver)
 ```
 
 #Data wrangling: 
