@@ -17,17 +17,18 @@ library(tidyverse)
 library(lubridate)
 library(readxl)
 library(gridExtra)
-library(calecopal)
+#library(calecopal)
 library(rstatix)
 library(vars)
 library(MuMIn)
 library(lme4) #for mixed effects models
 library(cowplot)
 select = dplyr::select
-#if (!require("BiocManager", quietly = TRUE))
-   # install.packages("BiocManager")
-#BiocManager::install("variancePartition")
 
+#to run variance decompositions: 
+if (!require("BiocManager", quietly = TRUE))
+install.packages("BiocManager")
+BiocManager::install("variancePartition")
 library('variancePartition')
 
 source(here::here("scripts", "scripts_functions", "plotPercentBars_IB.R"))

@@ -12,14 +12,14 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 library(tidyverse)
-library(boot)
+#library(boot)
 source(here::here("scripts", "scripts_functions", "figure_info.R"))
 library(lme4)
 library(MuMIn) #for r.squaredGLMM fxn
 library(emmeans) #for tukey of model
-library("lmerTest")
+library(lmerTest)
 library(here)
-utils::install.packages("lme4", type = "source")
+#utils::install.packages("lme4", type = "source")
 ```
 #-------
 #DATA: 
@@ -41,19 +41,19 @@ data_qudo_raw <- read_csv(here::here("processed-data", paste0("analysis",datver,
   distinct() %>% 
   filter(!(week == 19 & time == "pd" & water_potential < -2))
 
-data_og_lwc <- data_qudo_raw %>% 
+wc_qudo_df <- data_qudo_raw %>% 
   select(tree, week, water_potential, lwc_mean, time_season, time, species, site, date_wp) %>% 
   distinct() 
   
 #take a look at the counts for each week: 
-data_og_lwc %>% 
+wc_qudo_df %>% 
   group_by(week, time) %>% 
   summarise(n = n())
 ```
 
 Look at it: 
 ```{r}
-data <- data_og_lwc %>% 
+data <- wc_qudo_df %>% 
   mutate(tree_week = paste(tree, week, sep = "_")
   ) %>% 
   mutate(water_potential = water_potential)
@@ -106,7 +106,7 @@ plotly::ggplotly(data_qudo_raw %>%
 
 #TIME:
 ```{r}
-data_all <- data_og_lwc %>% 
+data_all <- wc_qudo_df %>% 
   filter(time == "md") 
 
 # Filter for trees measured "before leafout"
@@ -360,7 +360,7 @@ Get slopes from random effects:
 With site random effect
 
 ```{r, echo=FALSE}
-data <- data_og_lwc %>% 
+data <- wc_qudo_df %>% 
   filter(time == "md") %>% 
   select(tree, week, water_potential, lwc_mean, site) %>% 
   distinct() %>% 
@@ -447,7 +447,7 @@ emmeans(mod, list(pairwise ~ week), adjust = "tukey")
 ```
 With no site random effect:
 ```{r, echo=FALSE}
-data <- data_og_lwc %>% 
+data <- wc_qudo_df %>% 
   filter(time == "md") %>% 
   select(tree, week, water_potential, lwc_mean, site) %>% 
   distinct() %>% 
@@ -532,7 +532,7 @@ emmeans(mod, list(pairwise ~ week), adjust = "tukey")
 
 
 ```{r, eval = F}
-data <- data_og_lwc %>% 
+data <- wc_qudo_df %>% 
   filter(time == "md") %>% 
   select(tree, week, water_potential, lwc_mean) %>% 
   distinct() %>% 
@@ -607,7 +607,7 @@ final_df_space %>%
 #HYDRATION: 
 
 ```{r, eval = F}
-data <- data_og_lwc %>% 
+data <- wc_qudo_df %>% 
   select(tree, week, water_potential, lwc_mean, time) %>%
   drop_na(lwc_mean, water_potential) %>% 
   group_by(tree, week) %>%
@@ -702,7 +702,7 @@ data %>%
   #summarise() %>% 
   count(as.factor(week))
 
-data <- data_og_lwc %>% 
+data <- wc_qudo_df %>% 
   select(tree, week, water_potential, lwc_mean, time) %>%
   drop_na(lwc_mean, water_potential) %>% 
   group_by(tree, week) %>%
@@ -839,6 +839,12 @@ final_df_all <- bind_rows(final_df_hyd, final_df_space, time_boot_df) %>%
 final_df_all %>% 
   write_csv(here::here("processed-data", "bootstrapped_df_qudo_lwc_mean.csv"))
 ```
+Since the above takes a long time to run, can just read in completed data from prev. runs (should be the same):
+
+```{r}
+final_df_all <- read_csv(here::here("processed-data", "bootstrapped_df_qudo_lwc_mean.csv"))
+```
+
 
 #-------
 
@@ -856,7 +862,7 @@ library(tidyverse)
 library(lubridate)
 library(readxl)
 library(gridExtra)
-library(calecopal)
+#library(calecopal)
 library(rstatix)
 library(vars)
 library(MuMIn)
@@ -952,7 +958,7 @@ wc_qudo_df %>%
 
 look at it: 
 ```{r}
-data <- data_og_lwc %>% 
+data <- wc_qudo_df %>% 
   mutate(tree_week = paste(tree, week, sep = "_")
   ) %>% 
   mutate(water_potential = water_potential) %>% 
@@ -1135,7 +1141,7 @@ ggsave(here("figures", "qudo figures", "LWC", "nice_hydration_slopes_bs_inds"), 
 ###Midday: 
 
 ```{r, warning = F}
-data_og_lwc <- wk_all %>% 
+wc_qudo_df <- wk_all %>% 
   filter(!week %in% c(9)) %>% 
   #filter(lwc_mean > .44) %>% 
   mutate(water_potential = water_potential) %>% 
@@ -1151,7 +1157,7 @@ data_og_lwc <- wk_all %>%
 
 ```{r, warning = F, echo=FALSE}
 #scaled
-space_nice <- data_og_lwc %>% 
+space_nice <- wc_qudo_df %>% 
   #drop_na(site) %>% 
   ggplot(aes(y = water_potential, 
             # x = lwc_mean_centered, 
@@ -1193,7 +1199,7 @@ ggsave(here("figures", "qudo figures", "LWC", "nice_space"), space_nice, device 
 
 ```{r, warning = F, echo=FALSE}
 #scaled
-space_nice_centered <- data_og_lwc %>% 
+space_nice_centered <- wc_qudo_df %>% 
   #drop_na(site) %>% 
   ggplot(aes(y = water_potential, 
              x = lwc_mean_centered, 
@@ -1236,7 +1242,7 @@ ggsave(here("figures", "qudo figures", "LWC", "nice_space_centered"), space_nice
 Do we need to include site here? 
 
 ```{r}
-space_df_nosite <- data_og_lwc %>% 
+space_df_nosite <- wc_qudo_df %>% 
   drop_na(site) %>% 
   mutate(week = as.factor(week))
 
@@ -1254,16 +1260,13 @@ space_mod_df
 
 space_mod_df <- broom.mixed::glance(space_mod1)
 
-
-library("lmerTest")
-summary(space_mod)
 ```
 
 Which weeks are significant?
 
 ```{r}
 #week 10: 
-wk <- data_og_lwc %>% 
+wk <- wc_qudo_df %>% 
   drop_na(site) %>% 
   mutate(week = as.factor(week)) %>% 
   filter(week == 10)
@@ -1276,7 +1279,7 @@ plot(space_mod)
 #p < 0.001
 
 #week 14: 
-wk <- data_og_lwc %>% 
+wk <- wc_qudo_df %>% 
   drop_na(site) %>% 
   mutate(week = as.factor(week)) %>% 
   filter(week == 14)
@@ -1286,7 +1289,7 @@ summary(space_mod)
 #p = 0.0145
 
 #week 15: 
-wk <- data_og_lwc %>% 
+wk <- wc_qudo_df %>% 
   drop_na(site) %>% 
   mutate(week = as.factor(week)) %>% 
   filter(week == 15)
@@ -1296,7 +1299,7 @@ summary(space_mod)
 #p < 0.001
 
 #week 17: 
-wk <- data_og_lwc %>% 
+wk <- wc_qudo_df %>% 
   drop_na(site) %>% 
   mutate(week = as.factor(week)) %>% 
   filter(week == 17)
@@ -1306,7 +1309,7 @@ summary(space_mod)
 #not sig
 
 #week 19: 
-wk <- data_og_lwc %>% 
+wk <- wc_qudo_df %>% 
   drop_na(site) %>% 
   mutate(week = as.factor(week)) %>% 
   filter(week == 19)
@@ -1316,7 +1319,7 @@ summary(space_mod)
 #p 0.0015
 
 #week 21: 
-wk <- data_og_lwc %>% 
+wk <- wc_qudo_df %>% 
   drop_na(site) %>% 
   mutate(week = as.factor(week)) %>% 
   filter(week == 21)
@@ -1326,7 +1329,7 @@ summary(space_mod)
 #p = 0.009
 
 #week 29: 
-wk <- data_og_lwc %>% 
+wk <- wc_qudo_df %>% 
   drop_na(site) %>% 
   mutate(week = as.factor(week)) %>% 
   filter(week == 29)
@@ -1336,7 +1339,7 @@ summary(space_mod)
 #p = 0.029
 
 #week 33: 
-wk <- data_og_lwc %>% 
+wk <- wc_qudo_df %>% 
   drop_na(site) %>% 
   mutate(week = as.factor(week)) %>% 
   filter(week == 33)
@@ -1347,7 +1350,7 @@ summary(space_mod)
 
 
 #week 37: 
-wk <- data_og_lwc %>% 
+wk <- wc_qudo_df %>% 
   drop_na(site) %>% 
   mutate(week = as.factor(week)) %>% 
   filter(week == 37)
@@ -1618,7 +1621,7 @@ library(gridExtra)
 #####Hydration
 
 ```{r}
-wk_figs <-data_og_lwc_1 %>% 
+wk_figs <-wc_qudo_df %>%  #wc_qudo_df %>% 
   group_by(tree, week) %>% 
   filter(n() == 2) %>% 
   filter(week %in% c(10, 12, 14, 15, 17, 19, 21, 29, 33, 37), 
@@ -1753,7 +1756,7 @@ nice_hydration_layered_1
 
 ```{r}
 #scaled
-space_nice_1 <- data_og_lwc %>% 
+space_nice_1 <- wc_qudo_df %>% 
   drop_na(site) %>% 
   ggplot(aes(y = water_potential, 
             x = lwc_mean,
@@ -2504,8 +2507,6 @@ marginal_r2_md
 ```{r}
 lma_mpa_df %>% 
   drop_na(lma_g_cm2_new, mean_mpa)
-
-unique(lma_mpa_df$tree)
 ```
 
 ```{r}
@@ -2817,8 +2818,53 @@ lma_plot_df  %>%
 
 
 ```{r, fig.height=2, fig.width=6}
-#+ 
- # scale_x_continuous(breaks = c(10, 14, 17, 21, 29, 37)) +
+lma_plot <- lma_plot_df  %>% 
+  mutate(week_alas_link = case_when(
+    week_alas_link %in% c(11) ~ 10, 
+    week_alas_link %in% c(13) ~ 14, 
+    TRUE ~ as.numeric(week_alas_link)
+  )) %>% 
+    group_by(week_alas_link, species) %>% 
+  # mutate(mean_swc_per_dry_g  = scale(mean_swc_per_dry_g), 
+  #        lma_g_cm2 = scale(lma_g_cm2)) %>% 
+  select(mean_swc_per_dry_g, lma_g_cm2, species, week, year_rwc) %>% 
+  mutate(#lma_all = lma_g_cm2_new,
+         lma_g_cm2 = mean(lma_g_cm2, na.rm = T), 
+         mean_swc_per_dry_g = mean(mean_swc_per_dry_g, na.rm = T)) %>% 
+  #filter(species %in% c("blue oak")) %>% 
+  #filter(lma_g_cm2 < 0.08) %>% 
+  select(week, #species, 
+         lma_g_cm2,
+          mean_swc_per_dry_g) %>% 
+  distinct() %>% 
+  drop_na(lma_g_cm2)  %>%
+ # filter(week %in% c(10, 11, 13, 14, 17, 21, 29, 37, 40)) %>% 
+  ggplot() +
+  # geom_point(aes(x = week_alas_link, 
+  #            y = lma_g_cm2, 
+  #            #color = species
+  #            ),
+  #            size = 3) +
+  # geom_line(aes(x = week_alas_link, 
+  #            y = lma_g_cm2, 
+  #            #color = species
+  #            )) +
+  geom_point(aes(x = week_alas_link, 
+             y = lma_g_cm2, 
+             color = "darkgrey",
+             shape = year_rwc
+             #color = species
+             ),
+                shape = 17,
+             size = 3,
+            color = "darkgrey") +
+  geom_line(aes(x = week_alas_link, 
+             y = lma_g_cm2, 
+             group = species
+             #color = species
+             ),
+            color = "darkgrey") +
+  facet_wrap(~species) +
   labs(y = "LMA (g/cm2)") +
   theme(legend.position = "none",
         axis.title.y = element_text(size = 20), 

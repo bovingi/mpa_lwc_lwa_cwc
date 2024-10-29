@@ -1,4 +1,5 @@
-library(calecopal)
+#install.packages("calecopal")
+#library(calecopal)
 library(MetBrewer)
 #make ggplot prettier
 
