@@ -2253,9 +2253,24 @@ data <- filtered_data  %>%
   group_by(tree) %>% 
   mutate(COUNT = n()) %>% 
   filter(!(COUNT == 1)) %>% 
-  select(-COUNT)
+  select(-COUNT)  %>%
+  filter(
+    sum(format(date_wp, "%m") == "05") > 0,  # At least one measurement in May
+    sum(format(date_wp, "%m") == "09") > 0,  # At least one measurement in September
+    n() >= 2  # At least two measurements
+  ) %>%
+  ungroup()
 data
+unique(data$date_wp)
 
+data %>% 
+  ggplot(aes(y = cwc, x = date_wp, color = as.factor(tree))) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = F)
+```
+
+
+```{r}
 #How many unique trees did we sample across these time periods? 39!
 num_unique_trees <- length(unique(data$tree))
 cat("Number of unique trees in the dataset:", num_unique_trees, "\n")
@@ -2403,7 +2418,7 @@ filtered_data <- dcwc_df_no_outliers %>%
 # Fit a linear model for each date and time combination, then extract p-values and slope estimates
 model_results <- filtered_data %>%
   group_by(date_wp, time) %>%
-  group_modify(~ tidy(lmer(water_potential ~ slope, data = .x))) %>%
+  group_modify(~ tidy(lm(water_potential ~ slope, data = .x))) %>%
   filter(term == "slope") %>%
   select(date_wp, time, estimate, std.error, statistic, p.value)
 
@@ -2412,6 +2427,26 @@ print(model_results)
 
 model_results %>% 
   filter(p.value < 0.1)
+
+# View the results
+print(model_results)
+
+sig_mods <- model_results %>% 
+  filter(p.value < 0.05) 
+sig_mods
+
+dcwc_df_no_outliers %>% 
+  filter((date_wp %in% c(sig_mods$date_wp) & time %in% c(sig_mods$time))) %>% 
+                   ggplot(aes(y = slope, 
+                              x = water_potential, 
+                              color = time)) +
+                   geom_smooth(method = "lm") +
+                   geom_point() + 
+                   facet_wrap(~date_wp, scales = "free") +
+  scale_color_manual(values = c("#C969A1","#165E6F")) +
+  labs(y = "dCWC", 
+       x = "Water Potential (MPa)", 
+       color = "Time")
 ```
 
 Early season: 
@@ -2430,6 +2465,16 @@ data <- filtered_data  %>%
   select(-COUNT)
 data
 
+unique(data$date_wp)
+
+data %>% 
+  ggplot(aes(y = cwc, x = date_wp, color = as.factor(tree))) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = F)
+```
+
+
+```{r}
 #How many unique trees did we sample across these time periods? 39!
 num_unique_trees <- length(unique(data$tree))
 cat("Number of unique trees in the dataset:", num_unique_trees, "\n")
@@ -2616,6 +2661,16 @@ data <- filtered_data  %>%
   select(-COUNT)
 data
 
+unique(data$date_wp)
+
+data %>% 
+  ggplot(aes(y = cwc, x = date_wp, color = as.factor(tree))) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = F)
+```
+
+
+```{r}
 #How many unique trees did we sample across these time periods? 39!
 num_unique_trees <- length(unique(data$tree))
 cat("Number of unique trees in the dataset:", num_unique_trees, "\n")
@@ -2798,13 +2853,22 @@ data <- filtered_data  %>%
   group_by(tree) %>% 
   mutate(COUNT = n()) %>% 
   filter(!(COUNT == 1)) %>% 
-  select(-COUNT)
+  select(-COUNT)  %>%
+  group_by(tree) %>%
+  filter(
+    sum(format(date_wp, "%m") == "05") > 0,  # At least one measurement in May
+    sum(format(date_wp, "%m") == "09") > 0,  # At least one measurement in September
+    n() >= 2  # At least two measurements
+  ) %>%
+  ungroup()
 data
 
 data %>% 
   ggplot(aes(y = cwc, x = date_wp, color = as.factor(tree))) + 
   geom_point() +
   geom_smooth(method = "lm", se = F)
+
+head(data)
 ```
 Should filter out the trees that were actually measured over the whole time period (e.g. up until September)
 
@@ -2823,7 +2887,7 @@ cat("Number of unique trees in the dataset:", num_unique_trees, "\n")
 n_iterations <- 1000
 
 # Number of random trees to sample
-n_sample_trees <- 40  # Adjust as needed based on the number of unique trees
+n_sample_trees <- 35  # Adjust as needed based on the number of unique trees
 
 # Function to calculate the slope for a specific tree within each iteration
 calculate_slope_for_tree <- function(tree_data) {
