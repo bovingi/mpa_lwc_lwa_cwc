@@ -57,6 +57,16 @@ data_og_cwc%>%
   filter(time == "md") %>% 
   group_by(week) %>% 
   summarise(n = n())
+
+##LMA data: 
+data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
+ # filter(time %in% c("md")) %>% 
+  group_by(tree, week) %>% 
+  mutate(lma_g_cm2 = mean(lma_g_cm2, na.rm = T), 
+         water_potential = -1*water_potential) %>% 
+  filter(species %in% c("blue oak")) %>% 
+  select(week, tree, species, lma_g_cm2, water_potential) %>% 
+  distinct()
 ```
 
 
@@ -2267,10 +2277,10 @@ data %>%
   ggplot(aes(y = cwc, x = date_wp, color = as.factor(tree))) + 
   geom_point() +
   geom_smooth(method = "lm", se = F)
-```
 
 
-```{r}
+
+
 #How many unique trees did we sample across these time periods? 39!
 num_unique_trees <- length(unique(data$tree))
 cat("Number of unique trees in the dataset:", num_unique_trees, "\n")
@@ -2447,6 +2457,54 @@ dcwc_df_no_outliers %>%
   labs(y = "dCWC", 
        x = "Water Potential (MPa)", 
        color = "Time")
+
+
+##ADD LMA
+
+filtered_data_lma <- merge(data_qudo_lma, filtered_data, by = c("tree", "week"), all = T) %>% 
+  select(-water_potential.x, -water_potential.y) %>% 
+  distinct() %>%
+ # filter(week > 19) %>%
+  mutate(
+    lma_g_cm2 = as.numeric(lma_g_cm2),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(lma_g_cm2, slope) %>% 
+  select(tree, week, date_wp, slope, lma_g_cm2)
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results_lma <- filtered_data_lma %>%
+  group_by(date_wp) %>%
+  group_modify(~ tidy(lm(lma_g_cm2 ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp,  estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results_lma)
+
+model_results_lma %>% 
+  filter(p.value < 0.1)
+
+# View the results
+print(model_results_lma)
+
+sig_mods_lma <- model_results_lma %>% 
+  filter(p.value < 0.05) 
+sig_mods_lma
+
+filtered_data_lma %>% 
+  filter((date_wp %in% c(sig_mods_lma$date_wp))) %>% 
+                   ggplot(aes(y = slope, 
+                              x = lma_g_cm2)) +
+                   geom_smooth(method = "lm") +
+                   geom_point() + 
+                   facet_wrap(~date_wp, scales = "free") +
+  scale_color_manual(values = c("#C969A1","#165E6F")) +
+  labs(y = "dCWC", 
+       x = "LMA (g/cm2)", 
+       color = "Time")
+
+
 ```
 
 Early season: 
@@ -2471,10 +2529,7 @@ data %>%
   ggplot(aes(y = cwc, x = date_wp, color = as.factor(tree))) + 
   geom_point() +
   geom_smooth(method = "lm", se = F)
-```
 
-
-```{r}
 #How many unique trees did we sample across these time periods? 39!
 num_unique_trees <- length(unique(data$tree))
 cat("Number of unique trees in the dataset:", num_unique_trees, "\n")
@@ -2645,6 +2700,53 @@ dcwc_df_no_outliers %>%
   labs(y = "dCWC", 
        x = "Water Potential (MPa)", 
        color = "Time")
+
+##ADD LMA
+
+filtered_data_lma <- merge(data_qudo_lma, filtered_data, by = c("tree", "week"), all = T) %>% 
+  select(-water_potential.x, -water_potential.y) %>% 
+  distinct() %>%
+ # filter(week > 19) %>%
+  mutate(
+    lma_g_cm2 = as.numeric(lma_g_cm2),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(lma_g_cm2, slope) %>% 
+  select(tree, week, date_wp, slope, lma_g_cm2)
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results_lma <- filtered_data_lma %>%
+  group_by(date_wp) %>%
+  group_modify(~ tidy(lm(lma_g_cm2 ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp,  estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results_lma)
+
+model_results_lma %>% 
+  filter(p.value < 0.1)
+
+# View the results
+print(model_results_lma)
+
+sig_mods_lma <- model_results_lma %>% 
+  filter(p.value < 0.05) 
+sig_mods_lma
+
+filtered_data_lma %>% 
+  filter((date_wp %in% c(sig_mods_lma$date_wp))) %>% 
+                   ggplot(aes(y = slope, 
+                              x = lma_g_cm2)) +
+                   geom_smooth(method = "lm") +
+                   geom_point() + 
+                   facet_wrap(~date_wp, scales = "free") +
+  scale_color_manual(values = c("#C969A1","#165E6F")) +
+  labs(y = "dCWC", 
+       x = "LMA (g/cm2)", 
+       color = "Time")
+
+
 ```
 
 
@@ -2667,10 +2769,7 @@ data %>%
   ggplot(aes(y = cwc, x = date_wp, color = as.factor(tree))) + 
   geom_point() +
   geom_smooth(method = "lm", se = F)
-```
 
-
-```{r}
 #How many unique trees did we sample across these time periods? 39!
 num_unique_trees <- length(unique(data$tree))
 cat("Number of unique trees in the dataset:", num_unique_trees, "\n")
@@ -2840,6 +2939,51 @@ dcwc_df_no_outliers %>%
   labs(y = "dCWC", 
        x = "Water Potential (MPa)", 
        color = "Time")
+
+##ADD LMA
+
+filtered_data_lma <- merge(data_qudo_lma, filtered_data, by = c("tree", "week"), all = T) %>% 
+  select(-water_potential.x, -water_potential.y) %>% 
+  distinct() %>%
+ # filter(week > 19) %>%
+  mutate(
+    lma_g_cm2 = as.numeric(lma_g_cm2),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(lma_g_cm2, slope) %>% 
+  select(tree, week, date_wp, slope, lma_g_cm2)
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results_lma <- filtered_data_lma %>%
+  group_by(date_wp) %>%
+  group_modify(~ tidy(lm(lma_g_cm2 ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp,  estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results_lma)
+
+model_results_lma %>% 
+  filter(p.value < 0.1)
+
+# View the results
+print(model_results_lma)
+
+sig_mods_lma <- model_results_lma %>% 
+  filter(p.value < 0.05) 
+sig_mods_lma
+
+filtered_data_lma %>% 
+  filter((date_wp %in% c(sig_mods_lma$date_wp))) %>% 
+                   ggplot(aes(y = slope, 
+                              x = lma_g_cm2)) +
+                   geom_smooth(method = "lm") +
+                   geom_point() + 
+                   facet_wrap(~date_wp, scales = "free") +
+  scale_color_manual(values = c("#C969A1","#165E6F")) +
+  labs(y = "dCWC", 
+       x = "LMA (g/cm2)", 
+       color = "Time")
 ```
 ####Whole date range
 
@@ -2855,6 +2999,7 @@ data <- filtered_data  %>%
   filter(!(COUNT == 1)) %>% 
   select(-COUNT)  %>%
   group_by(tree) %>%
+#filter out trees that werent measured in Sept. 
   filter(
     sum(format(date_wp, "%m") == "05") > 0,  # At least one measurement in May
     sum(format(date_wp, "%m") == "09") > 0,  # At least one measurement in September
@@ -2868,11 +3013,9 @@ data %>%
   geom_point() +
   geom_smooth(method = "lm", se = F)
 
-head(data)
-```
-Should filter out the trees that were actually measured over the whole time period (e.g. up until September)
 
-```{r}
+head(data)
+
 #How many unique trees did we sample across these time periods? 39!
 num_unique_trees <- length(unique(data$tree))
 cat("Number of unique trees in the dataset:", num_unique_trees, "\n")
@@ -3042,94 +3185,51 @@ dcwc_df_no_outliers %>%
   labs(y = "dCWC", 
        x = "Water Potential (MPa)", 
        color = "Time")
-```
-####Psi ~ CWC as dCWC: 
-Are there patterns in spatial dCWC that map onto MPa? 
+##ADD LMA
 
-```{r}
-dcwc_space <- tbootstrapped_slopes_df_after %>% 
-  select(tree, slope) %>% 
-  distinct()
+filtered_data_lma <- merge(data_qudo_lma, filtered_data, by = c("tree", "week"), all = T) %>% 
+  select(-water_potential.x, -water_potential.y) %>% 
+  distinct() %>%
+ # filter(week > 19) %>%
+  mutate(
+    lma_g_cm2 = as.numeric(lma_g_cm2),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(lma_g_cm2, slope) %>% 
+  select(tree, week, date_wp, slope, lma_g_cm2)
 
-dcwc_df <- merge(dcwc_space, data_og_cwc, by = c("tree"))
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results_lma <- filtered_data_lma %>%
+  group_by(date_wp) %>%
+  group_modify(~ tidy(lm(lma_g_cm2 ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp,  estimate, std.error, statistic, p.value)
 
-plotly::ggplotly(dcwc_df %>% 
+# View the results
+print(model_results_lma)
+
+model_results_lma %>% 
+  filter(p.value < 0.1)
+
+# View the results
+print(model_results_lma)
+
+sig_mods_lma <- model_results_lma %>% 
+  filter(p.value < 0.05) 
+sig_mods_lma
+
+filtered_data_lma %>% 
+  filter((date_wp %in% c(sig_mods_lma$date_wp))) %>% 
                    ggplot(aes(y = slope, 
-                              x = water_potential, 
-                              color = time)) +
-                   geom_point() + 
-                   geom_smooth(method = "lm") +
-                   facet_wrap(~week, scales = "free")
-                 )
-
-dcwc_df %>% 
-  filter(week > 19) %>% 
-                   ggplot(aes(y = slope, 
-                              x = water_potential, 
-                              color = time)) +
+                              x = lma_g_cm2)) +
                    geom_smooth(method = "lm") +
                    geom_point() + 
-                   facet_wrap(~date_wp, scales = "free") +
+                  # facet_wrap(~date_wp, scales = "free") +
   scale_color_manual(values = c("#C969A1","#165E6F")) +
   labs(y = "dCWC", 
-       x = "Water Potential", 
+       x = "LMA (g/cm2)", 
        color = "Time")
-```
 
-
-```{r}
-#predawns, week 37
-dcwc_pd <- dcwc_df %>% 
-  filter(time == "pd", 
-         week == "37")
-
-
-m1 <- lm(slope ~ water_potential, data = dcwc_pd)
-summary(m1)
-anova(m1)
-plot(m1)
-```
-
-
-```{r}
-#predawns, week 33
-dcwc_pd <- dcwc_df %>% 
-  filter(time == "pd", 
-         week == "33")
-
-m1 <- lm(slope ~ water_potential, data = dcwc_pd)
-summary(m1)
-anova(m1)
-plot(m1)
-```
-
-
-```{r}
-#middays, week 37
-dcwc_md <- dcwc_df %>% 
-  filter(time == "md", 
-         week == "37")
-
-
-m1 <- lm(slope ~ water_potential, data = dcwc_md)
-summary(m1)
-anova(m1)
-
-plot(m1)
-```
-
-
-```{r}
-#predawns, week 33
-dcwc_md <- dcwc_df %>% 
-  filter(time == "md", 
-         week == "33")
-
-m1 <- lm(slope ~ log(-1*water_potential), data = dcwc_md)
-summary(m1)
-anova(m1)
-
-plot(m1)
 ```
 
 #-----------------
