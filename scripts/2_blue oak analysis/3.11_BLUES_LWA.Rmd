@@ -50,16 +50,89 @@ data_og_lwa <- data_qudo_raw %>%
   distinct() %>% 
  # filter(week == 15) %>% 
   arrange(tree, week, time) %>% 
-  mutate(site = as.factor(site))
+  mutate(site = as.factor(site)) 
 
-#take a look at the counts for each week: 
-data_og_lwa %>% 
-  group_by(week, time) %>% 
-  summarise(n = n())
 ```
 
+#TIME, from ChatGPT:
+```{r}
+library(dplyr)
+library(furrr)
+library(future)
+library(ggplot2)
 
-#TIME:
+# Set up parallel processing
+plan(multisession)
+
+# Define the number of bootstrap iterations and sample size
+n_iterations <- 1000
+n_sample_trees <- 40
+
+# Define function to calculate the slope for a specific tree
+calculate_slope_for_tree <- function(tree_data) {
+  model <- lm(water_potential ~ lwa_g_cm2_new, data = tree_data)
+  coef(model)[2]  # Extract the slope coefficient
+}
+
+# Define function for a single bootstrap iteration
+bootstrap_iteration <- function(data, sample_size) {
+  # Sample trees with replacement
+  sampled_tree_ids <- sample(unique(data$tree), size = sample_size, replace = TRUE)
+  
+  # Calculate slope for each sampled tree
+  slopes <- map_dbl(sampled_tree_ids, function(tree_id) {
+    tree_data <- data %>% filter(tree == tree_id)
+    calculate_slope_for_tree(tree_data)
+  })
+  
+  # Return mean slope for this iteration
+  mean(slopes, na.rm = TRUE)
+}
+
+# Bootstrap analysis for each time season
+run_bootstrap <- function(data, time_season, weeks) {
+  # Filter data for the specific weeks and time season
+  filtered_data <- data %>%
+    filter(week %in% weeks) %>%
+    distinct() %>%
+    drop_na(lwa_g_cm2_new, water_potential) %>%
+    group_by(tree) %>%
+    filter(n() > 1) %>%
+    ungroup()
+  
+  # Run bootstrap iterations in parallel
+  bootstrapped_results <- future_map_dbl(1:n_iterations, ~bootstrap_iteration(filtered_data, n_sample_trees), .progress = TRUE)
+  
+  # Calculate confidence intervals
+  ci_values <- tibble(
+    mean = mean(bootstrapped_results, na.rm = TRUE),
+    lower_bound = quantile(bootstrapped_results, 0.025, na.rm = TRUE),
+    upper_bound = quantile(bootstrapped_results, 0.975, na.rm = TRUE),
+    pre_post = time_season
+  )
+  
+  ci_values
+}
+
+# Combine results for before and after leafout
+time_boot_df <- bind_rows(
+  run_bootstrap(filtered_data, "before leafout", 10:17),
+  run_bootstrap(filtered_data, "after leafout", 18:40)
+) %>%
+  mutate(analysis = "time, ind. tree")
+
+# Plot results
+time_boot_df %>%
+  ggplot(aes(x = pre_post)) +
+  geom_point(aes(y = mean, color = "Mean")) +
+  geom_errorbar(aes(ymin = lower_bound, ymax = upper_bound), color = "blue", width = 0.2) +
+  labs(y = "Mean Slope with Confidence Interval", x = "Leafout Season") +
+  theme_minimal()
+
+```
+
+#TIME, original code:
+
 ```{r}
 data_all <- data_og_lwa %>% 
   filter(time == "md") 
@@ -103,7 +176,7 @@ data <- filtered_data  %>%
   filter(#time_season == "before leafout", 
          week %in% c(10:17)) %>% 
   distinct() %>% 
-  drop_na(water_potential, lwa_g_cm2_new) 
+  drop_na(lwa_g_cm2) 
 
 num_unique_trees <- length(unique(data$tree))
 cat("Number of unique trees in the dataset:", num_unique_trees, "\n")

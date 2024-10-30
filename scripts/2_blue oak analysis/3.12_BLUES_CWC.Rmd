@@ -44,6 +44,7 @@ dataversion <- paste0("Data_", datver)
 #DATA
 
 ```{r}
+#CWC data: 
 data_og_cwc <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".csv")), show_col_types = F) %>%  
   filter(species %in% c("blue oak")) %>% 
   select(tree, week, water_potential, cwc, time_season, time, site, date_wp) %>% 
@@ -1753,8 +1754,7 @@ space_nice_2
 
 #Slopes: 
 
-####***Space - SE
-
+####Space - SE
 
 ```{r}
 space_slope_df <- final_df_space_se%>%  
@@ -1859,9 +1859,9 @@ space_slope <- space_slope_df %>%
 space_slope
 ```
 
-#######Space - BS
-```{r, eval = F}
-space_slope <-  final_df_all_cwc%>% 
+####Space - BS
+```{r}
+space_slope <-  final_df_all_cwc %>% 
    filter(!week %in% c(9)) %>% 
   filter(analysis == "space") %>% 
  # mutate(week = as.numeric(week)) %>% 
@@ -2445,18 +2445,18 @@ sig_mods <- model_results %>%
   filter(p.value < 0.05) 
 sig_mods
 
-dcwc_df_no_outliers %>% 
-  filter((date_wp %in% c(sig_mods$date_wp) & time %in% c(sig_mods$time))) %>% 
-                   ggplot(aes(y = slope, 
-                              x = water_potential, 
-                              color = time)) +
-                   geom_smooth(method = "lm") +
-                   geom_point() + 
-                   facet_wrap(~date_wp, scales = "free") +
-  scale_color_manual(values = c("#C969A1","#165E6F")) +
-  labs(y = "dCWC", 
-       x = "Water Potential (MPa)", 
-       color = "Time")
+# dcwc_df_no_outliers %>% 
+#   filter((date_wp %in% c(sig_mods$date_wp) & time %in% c(sig_mods$time))) %>% 
+#                    ggplot(aes(y = slope, 
+#                               x = water_potential, 
+#                               color = time)) +
+#                    geom_smooth(method = "lm") +
+#                    geom_point() + 
+#                    facet_wrap(~date_wp, scales = "free") +
+#   scale_color_manual(values = c("#C969A1","#165E6F")) +
+#   labs(y = "dCWC", 
+#        x = "Water Potential (MPa)", 
+#        color = "Time")
 
 
 ##ADD LMA
