@@ -59,14 +59,14 @@ data_og_cwc%>%
   group_by(week) %>% 
   summarise(n = n())
 
-##LMA data: 
+##LMA, LWA, LWC data: 
 data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
  # filter(time %in% c("md")) %>% 
   group_by(tree, week) %>% 
   mutate(lma_g_cm2 = mean(lma_g_cm2, na.rm = T), 
          water_potential = -1*water_potential) %>% 
   filter(species %in% c("blue oak")) %>% 
-  select(week, tree, species, lma_g_cm2, water_potential) %>% 
+  select(week, tree, species, lma_g_cm2, water_potential, lwc_mean, lwa_g_cm2) %>% 
   distinct()
 ```
 
@@ -2252,6 +2252,8 @@ ggsave(here("figures", "qudo figures", "CWC", "combined_plots_all_qudo"), combin
 
 #dCWC (change in CWC over time)
 
+
+
 #####Whole time period after leaf expansion (April 25, May 04, May 09, May 23, Sept. 15)
 ```{r}
 ###dcwc leafout: 
@@ -2360,6 +2362,12 @@ dcwc_space <- bootstrapped_slopes_df %>%
 # Assuming 'data_og_cwc' is defined in your environment
 dcwc_df <- merge(dcwc_space, data_og_cwc)
 
+# Calculate the IQR bounds for the slope column
+slope_bounds <- dcwc_df %>%
+  summarize(
+    lower_bound = quantile(slope, 0.25) - 1.5 * IQR(slope),
+    upper_bound = quantile(slope, 0.75) + 1.5 * IQR(slope)
+  )
 # Print the final merged dataframe
 print(dcwc_df)
 
@@ -2384,6 +2392,13 @@ dcwc_df %>%
   labs(y = "dCWC", 
        x = "Water Potential (MPa)", 
        color = "Time")
+
+# Calculate the IQR bounds for the slope column
+slope_bounds <- dcwc_df %>%
+  summarize(
+    lower_bound = quantile(slope, 0.25) - 1.5 * IQR(slope),
+    upper_bound = quantile(slope, 0.75) + 1.5 * IQR(slope)
+  )
 
 # Filter out rows where slope falls outside of these bounds
 dcwc_df_no_outliers <- dcwc_df %>%
@@ -2634,6 +2649,13 @@ dcwc_df %>%
        x = "Water Potential (MPa)", 
        color = "Time")
 
+# Calculate the IQR bounds for the slope column
+slope_bounds <- dcwc_df %>%
+  summarize(
+    lower_bound = quantile(slope, 0.25) - 1.5 * IQR(slope),
+    upper_bound = quantile(slope, 0.75) + 1.5 * IQR(slope)
+  )
+
 # Filter out rows where slope falls outside of these bounds
 dcwc_df_no_outliers <- dcwc_df %>%
   filter(slope >= slope_bounds$lower_bound & slope <= slope_bounds$upper_bound)
@@ -2872,6 +2894,13 @@ dcwc_df %>%
        x = "Water Potential (MPa)", 
        color = "Time")
 
+# Calculate the IQR bounds for the slope column
+slope_bounds <- dcwc_df %>%
+  summarize(
+    lower_bound = quantile(slope, 0.25, na.rm = T) - 1.5 * IQR(slope, na.rm = T),
+    upper_bound = quantile(slope, 0.75, na.rm = T) + 1.5 * IQR(slope, na.rm = T)
+  )
+
 # Filter out rows where slope falls outside of these bounds
 dcwc_df_no_outliers <- dcwc_df %>%
   filter(slope >= slope_bounds$lower_bound & slope <= slope_bounds$upper_bound)
@@ -2990,7 +3019,7 @@ filtered_data_lma %>%
 ```{r}
 ###dcwc leafout: 
 
-data <- filtered_data  %>% 
+data <- filtered_data %>% 
   #filter(week %in% c(29:40)) %>% 
   distinct() %>% 
   drop_na(water_potential, cwc) %>% 
@@ -3118,6 +3147,13 @@ dcwc_df %>%
        x = "Water Potential (MPa)", 
        color = "Time")
 
+# Calculate the IQR bounds for the slope column
+slope_bounds <- dcwc_df %>%
+  summarize(
+    lower_bound = quantile(slope, 0.25) - 1.5 * IQR(slope),
+    upper_bound = quantile(slope, 0.75) + 1.5 * IQR(slope)
+  )
+
 # Filter out rows where slope falls outside of these bounds
 dcwc_df_no_outliers <- dcwc_df %>%
   filter(slope >= slope_bounds$lower_bound & slope <= slope_bounds$upper_bound)
@@ -3234,34 +3270,5 @@ filtered_data_lma %>%
 
 #-----------------
 
-#UNUSED for now!
 
-```{r}
-
-data_dcwc <- data_og_cwc %>% 
-  mutate(week = as.character(week)) %>% 
-  pivot_wider(names_from = week, 
-              values_from = c(cwc, water_potential)
-              ) %>% 
-  select(-date_wp, -time_season) %>% 
-  group_by(tree, time) %>% 
-  fill(c(3:25), .direction = "downup") %>% 
-  distinct() %>% 
-  ungroup() %>% 
-  group_by(tree) %>% 
-  fill(c(4:11), .direction = "downup") %>% 
-  filter(time == "md") %>%#just middays for now! 
-  mutate(week10_12 = cwc_10-cwc_12,
-         week12_14 = cwc_12-cwc_14,
-         week14_15 = cwc_14-cwc_15,
-         week15_17 = cwc_15-cwc_17,
-         week17_18 = cwc_17-cwc_18,
-         week18_19 = cwc_18-cwc_19,
-         week19_21 = cwc_19-cwc_21,
-         week21_33 = cwc_21-cwc_33,
-         week33_37 = cwc_33-cwc_37,
-         )
-
-data_dcwc 
-```
 
