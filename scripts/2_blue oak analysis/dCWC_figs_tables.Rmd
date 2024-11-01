@@ -1,0 +1,25 @@
+---
+title: "Untitled"
+author: "Indra Boving"
+date: "2024-11-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+library(tidyverse)
+source(here::here("scripts", "scripts_functions", "figure_info.R"))
+```
+
+Load data: 
+
+```{r}
+sig_mods_all <- bind_rows(read_csv(here("processed-data", "model results", "dcwc_mods_lwa.csv")),
+                          read_csv(here("processed-data", "model results", "dcwc_mods_lwc.csv")),
+                          read_csv(here("processed-data", "model results", "dcwc_mods.csv"))
+                          )
+sig_mods_all
+
+write_csv(sig_mods_all, here(here("processed-data", "model results", "table_sx.csv")))
+```
+

@@ -1,0 +1,14 @@
+var,timeframe,date_wp,time,p.value
+lwc,whole timeframe,2022-04-04,pd,0.024061756840646743
+lwc,whole timeframe,2022-04-25,md,0.036656748042989205
+lwc,whole timeframe,2022-04-25,pd,0.03306917970779347
+lwc,before leaf expansion,2022-04-13,md,0.02599225086622276
+lwc,before leaf expansion,2022-05-09,pd,0.02261807038166602
+LMA,whole timeframe,2022-03-08,NA,0.035399693814065665
+LMA,whole timeframe,2022-05-23,NA,0.0055295971314281624
+LMA,after leaf expansion,2022-03-25,NA,1.0754735608129808e-8
+LMA,after leaf expansion,2022-04-04,NA,1.1991198913477394e-5
+LMA,after leaf expansion,2022-04-13,NA,0.025555080507009643
+LMA,before leaf expansion,2022-05-09,NA,0.03080363472111045
+LMA,just May,2022-03-08,NA,5.671545691917561e-4
+LMA,just May,2022-05-09,NA,0.00969434571520307
