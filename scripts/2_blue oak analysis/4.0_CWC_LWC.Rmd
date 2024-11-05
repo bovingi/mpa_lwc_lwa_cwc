@@ -1397,7 +1397,7 @@ dcwc_df_no_outliers %>%
                    facet_wrap(~date_wp, scales = "free") +
   scale_color_manual(values = c("#C969A1","#165E6F")) +
   labs(y = "dCWC", 
-       x = "Water Potential (MPa)", 
+       x = "LWC", 
        color = "Time")
 
 ```
@@ -1591,18 +1591,18 @@ sig_mods_may_lwc <- model_results %>%
   #filter(p.value < 0.1)
 sig_mods_may_lwc
 
-# dcwc_df_no_outliers %>% 
-#   filter((date_wp %in% c(sig_mods_may_lwc$date_wp) & time %in% c(sig_mods_may_lwc$time))) %>% 
-#                    ggplot(aes(y = slope, 
-#                               x = lwc_mean, 
-#                               color = time)) +
-#                    geom_smooth(method = "lm") +
-#                    geom_point() + 
-#                    facet_wrap(~date_wp, scales = "free") +
-#   scale_color_manual(values = c("#C969A1","#165E6F")) +
-#   labs(y = "dCWC", 
-#        x = "Water Potential (MPa)", 
-#        color = "Time")
+dcwc_df_no_outliers %>%
+  filter((date_wp %in% c(sig_mods_may_lwc$date_wp) & time %in% c(sig_mods_may_lwc$time))) %>%
+                   ggplot(aes(y = slope,
+                              x = lwc_mean,
+                              color = time)) +
+                   geom_smooth(method = "lm") +
+                   geom_point() +
+                   facet_wrap(~date_wp, scales = "free") +
+  scale_color_manual(values = c("#C969A1","#165E6F")) +
+  labs(y = "dCWC",
+       x = "Water Potential (MPa)",
+       color = "Time")
 ```
 ####Whole date range
 

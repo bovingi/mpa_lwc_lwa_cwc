@@ -66,7 +66,7 @@ data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".cs
   mutate(lma_g_cm2 = mean(lma_g_cm2, na.rm = T), 
          water_potential = -1*water_potential) %>% 
   filter(species %in% c("blue oak")) %>% 
-  select(week, tree, species, lma_g_cm2, water_potential, lwc_mean, lwa_g_cm2) %>% 
+  select(week, time, tree, species, lma_g_cm2, water_potential, lwc_mean, lwa_g_cm2) %>% 
   distinct()
 ```
 
@@ -79,6 +79,8 @@ data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".cs
 #Bootstrapping
 
 ##TIME:
+
+####(To get filtered_data)
 ```{r}
 data_all <- data_og_cwc %>% 
   filter(time == "md") 
@@ -110,8 +112,11 @@ num_unique_tree_ids <- length(unique_tree_ids)
 cat("Number of unique tree IDs in common_trees_data:", num_unique_tree_ids, "\n")
 
 # Filter the original dataset to include only the common tree IDs
-filtered_data <- data_all[data_all$tree %in% common_trees, ] 
+filtered_data <- data_all[data_all$tree %in% common_trees, ]
+```
 
+
+```{r}
 plotly::ggplotly(filtered_data %>% 
   drop_na(week)  %>% 
   group_by(tree) %>% 
@@ -2471,20 +2476,22 @@ sig_mods_whole_mpa <- model_results %>%
   filter(p.value < 0.05) 
 sig_mods_whole_mpa
 
-# dcwc_df_no_outliers %>% 
-#   filter((date_wp %in% c(sig_mods$date_wp) & time %in% c(sig_mods$time))) %>% 
-#                    ggplot(aes(y = slope, 
-#                               x = water_potential, 
-#                               color = time)) +
-#                    geom_smooth(method = "lm") +
-#                    geom_point() + 
-#                    facet_wrap(~date_wp, scales = "free") +
-#   scale_color_manual(values = c("#C969A1","#165E6F")) +
-#   labs(y = "dCWC", 
-#        x = "Water Potential (MPa)", 
-#        color = "Time")
+dcwc_df_no_outliers %>%
+  filter((date_wp %in% c(sig_mods_whole_mpa$date_wp) & time %in% c(sig_mods_whole_mpa$time))) %>%
+                   ggplot(aes(y = slope,
+                              x = water_potential,
+                              color = time)) +
+                   geom_smooth(method = "lm") +
+                   geom_point() +
+                   facet_wrap(~date_wp, scales = "free") +
+  scale_color_manual(values = c("#C969A1","#165E6F")) +
+  labs(y = "dCWC",
+       x = "Water Potential (MPa)",
+       color = "Time")
+```
 
 
+```{r}
 ##ADD LMA
 
 filtered_data_lma <- merge(data_qudo_lma, filtered_data, by = c("tree", "week"), all = T) %>% 
@@ -2530,6 +2537,7 @@ filtered_data_lma %>%
        x = "LMA (g/cm2)", 
        color = "Time")
 
+dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_afterleafout_df_no_outliers.csv"))
 
 ```
 
@@ -2721,19 +2729,24 @@ sig_mods_before_mpa <- model_results %>%
   filter(p.value < 0.05) 
 sig_mods_before_mpa
 
-# dcwc_df_no_outliers %>% 
-#   filter((date_wp %in% c(sig_mods_before_mpa$date_wp) & time %in% c(sig_mods$time))) %>% 
-#                    ggplot(aes(y = slope, 
-#                               x = water_potential, 
-#                               color = time)) +
-#                    geom_smooth(method = "lm") +
-#                    geom_point() + 
-#                    facet_wrap(~date_wp, scales = "free") +
-#   scale_color_manual(values = c("#C969A1","#165E6F")) +
-#   labs(y = "dCWC", 
-#        x = "Water Potential (MPa)", 
-#        color = "Time")
+dcwc_df_no_outliers %>%
+  filter((date_wp %in% c(sig_mods_before_mpa$date_wp) & time %in% c(sig_mods_before_mpa$time))) %>%
+                   ggplot(aes(y = slope,
+                              x = water_potential,
+                              color = time)) +
+                   geom_smooth(method = "lm") +
+                   geom_point() +
+                   facet_wrap(~date_wp, scales = "free") +
+  scale_color_manual(values = c("#C969A1","#165E6F")) +
+  labs(y = "dCWC",
+       x = "Water Potential (MPa)",
+       color = "Time")
 
+dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_beforeleafout_df_no_outliers.csv"))
+```
+
+
+```{r}
 ##ADD LMA
 
 filtered_data_lma <- merge(data_qudo_lma, filtered_data, by = c("tree", "week"), all = T) %>% 
@@ -2967,6 +2980,11 @@ sig_mods_may_mpa <- model_results %>%
   #filter(p.value < 0.1)
 sig_mods_may_mpa
 
+dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_justmay_df_no_outliers.csv"))
+```
+
+
+```{r}
 # dcwc_df_no_outliers %>% 
 #   filter((date_wp %in% c(sig_mods_may_mpa$date_wp) & time %in% c(sig_mods$time))) %>% 
 #                    ggplot(aes(y = slope, 
@@ -3220,18 +3238,18 @@ sig_mods_all_mpa <- model_results %>%
   #filter(p.value < 0.1)
 sig_mods_all_mpa
 
-# dcwc_df_no_outliers %>% 
-#   filter((date_wp %in% c(sig_mods_all_mpa$date_wp) & time %in% c(sig_mods$time))) %>% 
-#                    ggplot(aes(y = slope, 
-#                               x = water_potential, 
-#                               color = time)) +
-#                    geom_smooth(method = "lm") +
-#                    geom_point() + 
-#                    facet_wrap(~date_wp, scales = "free") +
-#   scale_color_manual(values = c("#C969A1","#165E6F")) +
-#   labs(y = "dCWC", 
-#        x = "Water Potential (MPa)", 
-#        color = "Time")
+dcwc_df_no_outliers %>%
+  filter((date_wp %in% c(sig_mods_all_mpa$date_wp) & time %in% c(sig_mods_all_mpa$time))) %>%
+                   ggplot(aes(y = slope,
+                              x = water_potential,
+                              color = time)) +
+                   geom_smooth(method = "lm") +
+                   geom_point() +
+                   facet_wrap(~date_wp, scales = "free") +
+  scale_color_manual(values = c("#C969A1","#165E6F")) +
+  labs(y = "dCWC",
+       x = "Water Potential (MPa)",
+       color = "Time")
 ##ADD LMA
 
 filtered_data_lma <- merge(data_qudo_lma, filtered_data, by = c("tree", "week"), all = T) %>% 
@@ -3266,22 +3284,26 @@ sig_mods_all_lma <- model_results_lma %>%
 sig_mods_all_lma
 
 filtered_data_lma %>% 
-  filter((date_wp %in% c(sig_mods_all_lma$date_wp))) %>% 
+  #filter((date_wp %in% c(sig_mods_all_lma$date_wp))) %>% 
+  filter((date_wp %in% c("2022-03-08", 
+                         "2022-05-23")
+          )) %>% 
                    ggplot(aes(y = slope, 
                               x = lma_g_cm2)) +
                    geom_smooth(method = "lm") +
                    geom_point() + 
-                  # facet_wrap(~date_wp, scales = "free") +
+                   facet_wrap(~date_wp, scales = "free") +
   scale_color_manual(values = c("#C969A1","#165E6F")) +
   labs(y = "dCWC", 
        x = "LMA (g/cm2)", 
        color = "Time")
 
+dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_wholedaterange_df_no_outliers.csv"))
 ```
 #TABLE: 
 
 ```{r}
-sig_mods_all <- bind_rows(sig_mods_all_mpa %>% mutate(var = "mpa",
+sig_mods_all_mpa_lma <- bind_rows(sig_mods_all_mpa %>% mutate(var = "mpa",
                                                       timeframe = "whole timeframe"), 
                           sig_mods_whole_mpa %>% mutate(var = "mpa",
                                                       timeframe = "after leaf expansion"), 
@@ -3300,9 +3322,9 @@ sig_mods_all <- bind_rows(sig_mods_all_mpa %>% mutate(var = "mpa",
                           ) %>% 
   select(var, timeframe,date_wp, time, estimate, p.value)
 
-sig_mods_all
+sig_mods_all_mpa_lma
 
-write_csv(sig_mods_all, here("processed-data", "model results", "dcwc_mods.csv"))
+write_csv(sig_mods_all_mpa_lma, here("processed-data", "model results", "dcwc_mods.csv"))
 ```
 
 #-----------------

@@ -9,17 +9,755 @@ output: html_document
 knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
 library(tidyverse)
 source(here::here("scripts", "scripts_functions", "figure_info.R"))
+select = dplyr::select
+datver <- "20230724"
 ```
+
+```{r}
+#OLD TABLE:
+# sig_mods_all <- bind_rows(read_csv(here("processed-data", "model results", "dcwc_mods_lwa.csv")),
+#                           read_csv(here("processed-data", "model results", "dcwc_mods_lwc.csv")),
+#                           read_csv(here("processed-data", "model results", "dcwc_mods.csv"))
+#                           ) %>%
+#   mutate(across(where(is.numeric), ~ round(., 3)))
+# sig_mods_all
+# 
+# 
+# write_csv(sig_mods_all, here(here("processed-data", "model results", "table_sx.csv")))
+```
+
+#FIGURES: 
 
 Load data: 
 
+Need dCWC, MPa, LWmass, LWarea, LMA
+
 ```{r}
-sig_mods_all <- bind_rows(read_csv(here("processed-data", "model results", "dcwc_mods_lwa.csv")),
-                          read_csv(here("processed-data", "model results", "dcwc_mods_lwc.csv")),
-                          read_csv(here("processed-data", "model results", "dcwc_mods.csv"))
-                          )
+#from dCWC calculated with MPa analysis
+dcwc_wholedaterange <- read_csv(here("processed-data", "dcwc_wholedaterange_df_no_outliers.csv")) %>% 
+  select(-water_potential)
+
+dcwc_beforeleafout <- read_csv(here("processed-data", "dcwc_beforeleafout_df_no_outliers.csv")) %>% 
+  select(-water_potential)
+
+dcwc_afterleafout <- read_csv(here("processed-data", "dcwc_afterleafout_df_no_outliers.csv")) %>% 
+  select(-water_potential)
+
+dcwc_justmay <- read_csv(here("processed-data", "dcwc_justmay_df_no_outliers.csv")) %>% 
+  select(-water_potential)
+
+#lma, mpa, and lwmass and lwarea data: 
+data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
+ # filter(time %in% c("md")) %>% 
+  group_by(tree, week) %>% 
+  mutate(lma_g_cm2 = mean(lma_g_cm2, na.rm = T), 
+         water_potential = -1*water_potential) %>% 
+  filter(species %in% c("blue oak")) %>% 
+  select(week, tree, time, species, lma_g_cm2, water_potential, lwc_mean, lwa_g_cm2) %>% 
+  distinct()
+
+
+dcwc_alldata <- merge(dcwc_wholedaterange, data_qudo_lma, by = c("tree", "week", "time")) %>% 
+  distinct()
+
+dcwc_beforeleafout<- merge(dcwc_beforeleafout , data_qudo_lma, by = c("tree", "week", "time")) %>% 
+  distinct()
+
+dcwc_afterleafout<- merge(dcwc_afterleafout , data_qudo_lma, by = c("tree", "week", "time")) %>% 
+  distinct()
+
+dcwc_justmay <-  merge(dcwc_justmay, data_qudo_lma, by = c("tree", "week", "time")) %>% 
+  distinct()
+```
+
+```{r}
+#Many colors: 
+
+nb.cols <- 25
+pal <- met.brewer("Cross")
+mycolors <- colorRampPalette(pal)(nb.cols)
+
+color_very_many <- scale_color_manual(values = mycolors) 
+```
+
+#1. FIGURE: CWC over time, all dates: 
+
+```{r}
+dcwc_plot <- dcwc_alldata %>% 
+  #filter(week %in% c(29:40)) %>% 
+  distinct() %>% 
+  drop_na(water_potential, cwc) %>% 
+  group_by(tree) %>% 
+  mutate(COUNT = n()) %>% 
+  filter(!(COUNT == 1)) %>% 
+  select(-COUNT)  %>%
+  group_by(tree) %>%
+#filter out trees that werent measured in Sept. 
+  filter(
+    sum(format(date_wp, "%m") == "05") > 0,  # At least one measurement in May
+    sum(format(date_wp, "%m") == "09") > 0,  # At least one measurement in September
+    n() >= 2  # At least two measurements
+  ) %>%
+  ungroup()%>% 
+  filter(time == "md", 
+         species == "blue oak") %>%
+  select(cwc, date_wp, tree) %>% 
+  distinct() %>% 
+  ggplot(aes( y = cwc, 
+              x = date_wp, 
+              color = as.factor(tree))) + 
+  geom_point() +
+  theme(legend.position="none",
+       # legend.position= c(.7, .2),
+      strip.background = element_blank(),
+      strip.text.x = element_text(size = 12),
+      plot.title = element_text(size=13),
+     # axis.title = element_text(size = 16),
+     axis.text.y = element_text(size = 12),
+     axis.text.x = element_text(size = 12),
+    # axis.text.x  = element_blank(),
+     legend.key=element_blank(), 
+     # axis.title.x = element_blank(),
+    # axis.title.y = element_blank(),
+     legend.text = element_text(size = 13), 
+     legend.title = element_text(size = 16),
+     legend.margin=margin(0,0,0,0),
+      legend.box.margin=margin(-5,-8,-8,-8),
+    plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt")
+    ) +
+  geom_smooth(method = "lm", se = F,size = .5) +
+  color_very_many +
+  labs(y = "CWC (g/cm2)", 
+       x = "Date")
+
+dcwc_plot 
+```
+#2. TABLE: Test for significance:
+
+
+#dcwc over whole date range:
+```{r}
+#MPA:
+# Ensure columns are numeric and filter out NAs
+filtered_data <- dcwc_alldata %>%
+ # filter(week > 19) %>%
+  mutate(
+    water_potential = as.numeric(water_potential),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(water_potential, slope) # Remove rows with NA in these columns
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results <- filtered_data %>%
+  group_by(date_wp, time) %>%
+  group_modify(~ tidy(lm(water_potential ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp, time, estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results)
+
+sig_mods_all_mpa <- model_results %>% 
+  filter(p.value < 0.05) 
+  #filter(p.value < 0.1)
+sig_mods_all_mpa
+
+#LMA
+
+# Ensure columns are numeric and filter out NAs
+filtered_data <- dcwc_alldata %>%
+ # filter(week > 19) %>%
+  mutate(
+    lma_g_cm2 = as.numeric(lma_g_cm2),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(lma_g_cm2, slope) # Remove rows with NA in these columns
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results <- filtered_data %>%
+  group_by(date_wp) %>%
+  group_modify(~ tidy(lm(lma_g_cm2 ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp, estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results)
+
+sig_mods_all_lma <- model_results %>% 
+  filter(p.value < 0.05) 
+  #filter(p.value < 0.1)
+sig_mods_all_lma
+
+#LWarea:
+# Ensure columns are numeric and filter out NAs
+filtered_data <- dcwc_alldata %>%
+ # filter(week > 19) %>%
+  mutate(
+    lwa_g_cm2 = as.numeric(lwa_g_cm2),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(lwa_g_cm2, slope) # Remove rows with NA in these columns
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results <- filtered_data %>%
+  group_by(date_wp, time) %>%
+  group_modify(~ tidy(lm(lwa_g_cm2 ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp, time, estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results)
+
+sig_mods_all_lwa <- model_results %>% 
+  filter(p.value < 0.05) 
+  #filter(p.value < 0.1)
+sig_mods_all_lwa
+
+#LWarea:
+# Ensure columns are numeric and filter out NAs
+filtered_data <- dcwc_alldata %>%
+ # filter(week > 19) %>%
+  mutate(
+    lwc_mean = as.numeric(lwc_mean),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(lwc_mean, slope) # Remove rows with NA in these columns
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results <- filtered_data %>%
+  group_by(date_wp, time) %>%
+  group_modify(~ tidy(lm(lwc_mean ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp, time, estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results)
+
+sig_mods_all_lwc <- model_results %>% 
+  filter(p.value < 0.05) 
+  #filter(p.value < 0.1)
+sig_mods_all_lwc
+
+sig_mods_wholetimeframe <- bind_rows(sig_mods_all_lma %>% mutate(var = "LMA",
+                                                      timeframe = "whole timeframe"), 
+                              sig_mods_all_lwa %>% mutate(var = "LWA",
+                                                      timeframe = "whole timeframe"), 
+                              sig_mods_all_lwc %>% mutate(var = "LWC",
+                                                      timeframe = "whole timeframe"), 
+                              sig_mods_all_mpa %>% mutate(var = "MPa",
+                                                      timeframe = "whole timeframe"))
+sig_mods_wholetimeframe
+```
+
+#dcwc before leafout
+```{r}
+#MPA:
+# Ensure columns are numeric and filter out NAs
+filtered_data <- dcwc_beforeleafout %>%
+ # filter(week > 19) %>%
+  mutate(
+    water_potential = as.numeric(water_potential),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(water_potential, slope) # Remove rows with NA in these columns
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results <- filtered_data %>%
+  group_by(date_wp, time) %>%
+  group_modify(~ tidy(lm(water_potential ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp, time, estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results)
+
+sig_mods_all_mpa <- model_results %>% 
+  filter(p.value < 0.05) 
+  #filter(p.value < 0.1)
+sig_mods_all_mpa
+
+#LMA
+
+# Ensure columns are numeric and filter out NAs
+filtered_data <- dcwc_beforeleafout %>%
+ # filter(week > 19) %>%
+  mutate(
+    lma_g_cm2 = as.numeric(lma_g_cm2),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(lma_g_cm2, slope) %>% # Remove rows with NA in these columns
+  select(lma_g_cm2, slope, date_wp) %>% 
+  distinct()
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results <- filtered_data %>%
+  group_by(date_wp) %>%
+  group_modify(~ tidy(lm(lma_g_cm2 ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp, estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results)
+
+sig_mods_all_lma <- model_results %>% 
+  filter(p.value < 0.05) 
+  #filter(p.value < 0.1)
+sig_mods_all_lma
+
+#LWarea:
+# Ensure columns are numeric and filter out NAs
+filtered_data <- dcwc_beforeleafout %>%
+ # filter(week > 19) %>%
+  mutate(
+    lwa_g_cm2 = as.numeric(lwa_g_cm2),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(lwa_g_cm2, slope) # Remove rows with NA in these columns
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results <- filtered_data %>%
+  group_by(date_wp, time) %>%
+  group_modify(~ tidy(lm(lwa_g_cm2 ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp, time, estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results)
+
+sig_mods_all_lwa <- model_results %>% 
+  filter(p.value < 0.05) 
+  #filter(p.value < 0.1)
+sig_mods_all_lwa
+
+#LWarea:
+# Ensure columns are numeric and filter out NAs
+filtered_data <- dcwc_beforeleafout %>%
+ # filter(week > 19) %>%
+  mutate(
+    lwc_mean = as.numeric(lwc_mean),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(lwc_mean, slope) # Remove rows with NA in these columns
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results <- filtered_data %>%
+  group_by(date_wp, time) %>%
+  group_modify(~ tidy(lm(lwc_mean ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp, time, estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results)
+
+sig_mods_all_lwc <- model_results %>% 
+  filter(p.value < 0.05) 
+  #filter(p.value < 0.1)
+sig_mods_all_lwc
+
+sig_mods_beforeleafout <- bind_rows(sig_mods_all_lma %>% mutate(var = "LMA",
+                                                      timeframe = "before leafout"), 
+                              sig_mods_all_lwa %>% mutate(var = "LWA",
+                                                      timeframe = "before leafout"), 
+                              sig_mods_all_lwc %>% mutate(var = "LWC",
+                                                      timeframe = "before leafout"), 
+                              sig_mods_all_mpa %>% mutate(var = "MPa",
+                                                      timeframe = "before leafout"))
+sig_mods_beforeleafout
+```
+
+#dcwc after leafout
+```{r}
+#MPA:
+# Ensure columns are numeric and filter out NAs
+filtered_data <- dcwc_afterleafout %>%
+ # filter(week > 19) %>%
+  mutate(
+    water_potential = as.numeric(water_potential),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(water_potential, slope) # Remove rows with NA in these columns
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results <- filtered_data %>%
+  group_by(date_wp, time) %>%
+  group_modify(~ tidy(lm(water_potential ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp, time, estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results)
+
+sig_mods_all_mpa <- model_results %>% 
+  filter(p.value < 0.05) 
+  #filter(p.value < 0.1)
+sig_mods_all_mpa
+
+#LMA
+
+# Ensure columns are numeric and filter out NAs
+filtered_data <- dcwc_afterleafout %>%
+  #filter(week > 19) %>%
+  mutate(
+    lma_g_cm2 = as.numeric(lma_g_cm2),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(lma_g_cm2, slope) %>% # Remove rows with NA in these columns
+  select(lma_g_cm2, slope, date_wp) %>% 
+  distinct()
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results <- filtered_data %>%
+  group_by(date_wp) %>%
+  group_modify(~ tidy(lm(lma_g_cm2 ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp, estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results)
+
+sig_mods_all_lma <- model_results %>% 
+  filter(p.value < 0.05) 
+  #filter(p.value < 0.1)
+sig_mods_all_lma
+
+#LWarea:
+# Ensure columns are numeric and filter out NAs
+filtered_data <- dcwc_afterleafout %>%
+ # filter(week > 19) %>%
+  mutate(
+    lwa_g_cm2 = as.numeric(lwa_g_cm2),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(lwa_g_cm2, slope) # Remove rows with NA in these columns
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results <- filtered_data %>%
+  group_by(date_wp, time) %>%
+  group_modify(~ tidy(lm(lwa_g_cm2 ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp, time, estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results)
+
+sig_mods_all_lwa <- model_results %>% 
+  filter(p.value < 0.05) 
+  #filter(p.value < 0.1)
+sig_mods_all_lwa
+
+#LWarea:
+# Ensure columns are numeric and filter out NAs
+filtered_data <- dcwc_afterleafout %>%
+ # filter(week > 19) %>%
+  mutate(
+    lwc_mean = as.numeric(lwc_mean),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(lwc_mean, slope) # Remove rows with NA in these columns
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results <- filtered_data %>%
+  group_by(date_wp, time) %>%
+  group_modify(~ tidy(lm(lwc_mean ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp, time, estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results)
+
+sig_mods_all_lwc <- model_results %>% 
+  filter(p.value < 0.05) 
+  #filter(p.value < 0.1)
+sig_mods_all_lwc
+
+sig_mods_afterleafout <- bind_rows(sig_mods_all_lma %>% mutate(var = "LMA",
+                                                      timeframe = "after leafout"), 
+                              sig_mods_all_lwa %>% mutate(var = "LWA",
+                                                      timeframe = "after leafout"), 
+                              sig_mods_all_lwc %>% mutate(var = "LWC",
+                                                      timeframe = "after leafout"), 
+                              sig_mods_all_mpa %>% mutate(var = "MPa",
+                                                      timeframe = "after leafout"))
+sig_mods_afterleafout
+```
+#dcwc just May
+```{r}
+#MPA:
+# Ensure columns are numeric and filter out NAs
+filtered_data <- dcwc_justmay %>%
+ # filter(week > 19) %>%
+  mutate(
+    water_potential = as.numeric(water_potential),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(water_potential, slope) # Remove rows with NA in these columns
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results <- filtered_data %>%
+  group_by(date_wp, time) %>%
+  group_modify(~ tidy(lm(water_potential ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp, time, estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results)
+
+sig_mods_all_mpa <- model_results %>% 
+  filter(p.value < 0.05) 
+  #filter(p.value < 0.1)
+sig_mods_all_mpa
+
+#LMA
+
+# Ensure columns are numeric and filter out NAs
+filtered_data <- dcwc_justmay %>%
+ # filter(week > 19) %>%
+  mutate(
+    lma_g_cm2 = as.numeric(lma_g_cm2),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(lma_g_cm2, slope)  %>% # Remove rows with NA in these columns
+  select(lma_g_cm2, slope, date_wp) %>% 
+  distinct()
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results <- filtered_data %>%
+  group_by(date_wp) %>%
+  group_modify(~ tidy(lm(lma_g_cm2 ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp, estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results)
+
+sig_mods_all_lma <- model_results %>% 
+  filter(p.value < 0.05) 
+  #filter(p.value < 0.1)
+sig_mods_all_lma
+
+#LWarea:
+# Ensure columns are numeric and filter out NAs
+filtered_data <- dcwc_justmay %>%
+ # filter(week > 19) %>%
+  mutate(
+    lwa_g_cm2 = as.numeric(lwa_g_cm2),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(lwa_g_cm2, slope) # Remove rows with NA in these columns
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results <- filtered_data %>%
+  group_by(date_wp, time) %>%
+  group_modify(~ tidy(lm(lwa_g_cm2 ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp, time, estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results)
+
+sig_mods_all_lwa <- model_results %>% 
+  filter(p.value < 0.05) 
+  #filter(p.value < 0.1)
+sig_mods_all_lwa
+
+#LWarea:
+# Ensure columns are numeric and filter out NAs
+filtered_data <- dcwc_justmay %>%
+ # filter(week > 19) %>%
+  mutate(
+    lwc_mean = as.numeric(lwc_mean),
+    slope = as.numeric(slope)
+  ) %>%
+  drop_na(lwc_mean, slope) # Remove rows with NA in these columns
+
+# Fit a linear model for each date and time combination, then extract p-values and slope estimates
+model_results <- filtered_data %>%
+  group_by(date_wp, time) %>%
+  group_modify(~ tidy(lm(lwc_mean ~ slope, data = .x))) %>%
+  filter(term == "slope") %>%
+  select(date_wp, time, estimate, std.error, statistic, p.value)
+
+# View the results
+print(model_results)
+
+sig_mods_all_lwc <- model_results %>% 
+  filter(p.value < 0.05) 
+  #filter(p.value < 0.1)
+sig_mods_all_lwc
+
+sig_mods_justmay <- bind_rows(sig_mods_all_lma %>% mutate(var = "LMA",
+                                                      timeframe = "just may"), 
+                              sig_mods_all_lwa %>% mutate(var = "LWA",
+                                                      timeframe = "just may"), 
+                              sig_mods_all_lwc %>% mutate(var = "LWC",
+                                                      timeframe = "just may"), 
+                              sig_mods_all_mpa %>% mutate(var = "MPa",
+                                                      timeframe = "just may"))
+sig_mods_justmay
+```
+
+#all sig. models - final table
+
+
+```{r}
+sig_mods_all <- bind_rows(sig_mods_justmay, 
+                          sig_mods_beforeleafout, 
+                          sig_mods_afterleafout,
+                          sig_mods_wholetimeframe)  %>%
+   mutate(across(where(is.numeric), ~ round(., 3)))
 sig_mods_all
+
 
 write_csv(sig_mods_all, here(here("processed-data", "model results", "table_sx.csv")))
 ```
+
+
+#2. FIGURE: dCWC and the best dates: 
+
+```{r}
+fig_data <- merge(dcwc_alldata, sig_mods_all, by = c("date_wp", "time"), all.y = T)
+```
+
+- Best dates:
+```{r}
+mpa_plot <- fig_data %>% 
+  filter(var == "MPa"
+        ) %>% 
+  select(slope, water_potential, time, date_wp, timeframe) %>% 
+  ggplot(aes( y = water_potential, 
+              x = slope, 
+              shape = as.factor(timeframe),
+              color = time)) + 
+  geom_point() +
+  theme(#legend.position="none",
+       # legend.position= c(.7, .2),
+      strip.background = element_blank(),
+      strip.text.x = element_text(size = 12),
+      plot.title = element_text(size=13),
+     # axis.title = element_text(size = 16),
+     axis.text.y = element_text(size = 12),
+     axis.text.x = element_text(size = 12),
+    # axis.text.x  = element_blank(),
+     legend.key=element_blank(), 
+     # axis.title.x = element_blank(),
+    # axis.title.y = element_blank(),
+     legend.text = element_text(size = 13), 
+     legend.title = element_text(size = 16),
+     legend.margin=margin(0,0,0,0),
+      legend.box.margin=margin(-5,-8,-8,-8),
+    plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt")
+    ) +
+  facet_wrap(~date_wp, scales = "free") +
+  geom_smooth(method = "lm", se = F,size = .5) +
+  labs(y = "Water potential (Psi)", 
+       x = "Slope")
+mpa_plot
+```
+```{r}
+lwc_plot <- fig_data %>% 
+  filter(var == "LWC"
+        ) %>% 
+  select(slope, lwc_mean, time, date_wp, timeframe) %>% 
+  ggplot(aes( y = lwc_mean, 
+              x = slope, 
+              shape = as.factor(timeframe),
+              color = time)) + 
+  geom_point() +
+  theme(#legend.position="none",
+       # legend.position= c(.7, .2),
+      strip.background = element_blank(),
+      strip.text.x = element_text(size = 12),
+      plot.title = element_text(size=13),
+     # axis.title = element_text(size = 16),
+     axis.text.y = element_text(size = 12),
+     axis.text.x = element_text(size = 12),
+    # axis.text.x  = element_blank(),
+     legend.key=element_blank(), 
+     # axis.title.x = element_blank(),
+    # axis.title.y = element_blank(),
+     legend.text = element_text(size = 13), 
+     legend.title = element_text(size = 16),
+     legend.margin=margin(0,0,0,0),
+      legend.box.margin=margin(-5,-8,-8,-8),
+    plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt")
+    ) +
+  facet_wrap(~date_wp, scales = "free") +
+  geom_smooth(method = "lm", se = F,size = .5) +
+  labs(y = "LWmass (g)", 
+       x = "Slope")
+lwc_plot
+```
+
+```{r}
+lwa_plot <- fig_data %>% 
+  filter(var == "LWA"
+        ) %>% 
+  select(slope, lwa_g_cm2, time, date_wp, timeframe) %>% 
+  ggplot(aes( y = lwa_g_cm2, 
+              x = slope, 
+              shape = as.factor(timeframe),
+              color = time)) + 
+  geom_point() +
+  theme(#legend.position="none",
+       # legend.position= c(.7, .2),
+      strip.background = element_blank(),
+      strip.text.x = element_text(size = 12),
+      plot.title = element_text(size=13),
+     # axis.title = element_text(size = 16),
+     axis.text.y = element_text(size = 12),
+     axis.text.x = element_text(size = 12),
+    # axis.text.x  = element_blank(),
+     legend.key=element_blank(), 
+     # axis.title.x = element_blank(),
+    # axis.title.y = element_blank(),
+     legend.text = element_text(size = 13), 
+     legend.title = element_text(size = 16),
+     legend.margin=margin(0,0,0,0),
+      legend.box.margin=margin(-5,-8,-8,-8),
+    plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt")
+    ) +
+  facet_wrap(~date_wp, scales = "free") +
+  geom_smooth(method = "lm", se = F,size = .5) +
+  labs(y = "LWarea (g/cm2)", 
+       x = "Slope")
+lwa_plot
+```
+
+
+```{r}
+lma_fig_data <- merge(dcwc_alldata, sig_mods_all, by = c("date_wp"), all = T)
+  
+lma_plot <- lma_fig_data %>% 
+  filter(var == "LMA"
+        ) %>% 
+  select(slope, lma_g_cm2, date_wp, timeframe) %>% 
+  ggplot(aes( y = lma_g_cm2, 
+              x = slope, 
+              shape = as.factor(timeframe))) + 
+  geom_point() +
+  theme(#legend.position="none",
+       # legend.position= c(.7, .2),
+      strip.background = element_blank(),
+      strip.text.x = element_text(size = 12),
+      plot.title = element_text(size=13),
+     # axis.title = element_text(size = 16),
+     axis.text.y = element_text(size = 12),
+     axis.text.x = element_text(size = 12),
+    # axis.text.x  = element_blank(),
+     legend.key=element_blank(), 
+     # axis.title.x = element_blank(),
+    # axis.title.y = element_blank(),
+     legend.text = element_text(size = 13), 
+     legend.title = element_text(size = 16),
+     legend.margin=margin(0,0,0,0),
+      legend.box.margin=margin(-5,-8,-8,-8),
+    plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt")
+    ) +
+  facet_wrap(~date_wp, scales = "free") +
+  geom_smooth(method = "lm", se = F,size = .5) +
+  labs(y = "Water potential (Psi)", 
+       x = "Slope")
+lma_plot
+```
+
 
