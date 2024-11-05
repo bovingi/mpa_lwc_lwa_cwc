@@ -1,26 +1,29 @@
-date_wp,estimate,std.error,statistic,p.value,var,timeframe,time
-2022-05-09,6.052,2.097,2.886,0.01,LWC,just may,md
-2022-07-19,6.805,1.821,3.738,0.002,LWC,just may,pd
-2022-08-18,11.253,4.607,2.443,0.037,LWC,just may,md
-2022-08-18,95.444,31.468,3.033,0.014,MPa,just may,md
-2022-08-18,3.821,1.263,3.026,0.013,LWC,before leafout,pd
-2022-09-15,2.82,1.073,2.629,0.015,LWC,before leafout,pd
-2022-03-25,4.114,1.288,3.194,0.024,LMA,after leafout,NA
-2022-04-04,-1.802,0.553,-3.26,0.006,LMA,after leafout,NA
-2022-04-13,-1.423,0.623,-2.283,0.043,LMA,after leafout,NA
-2022-03-08,-3.871,0.471,-8.216,0.014,LWA,after leafout,pd
-2022-04-04,1.089,0.428,2.546,0.023,LWA,after leafout,pd
-2022-04-13,-1.857,0.527,-3.523,0.004,LWA,after leafout,md
-2022-04-04,256.567,58.041,4.42,0,LWC,after leafout,pd
-2022-04-25,51.673,15.316,3.374,0.003,LWC,after leafout,md
-2022-05-09,31.755,10.377,3.06,0.006,LWC,after leafout,md
-2022-05-09,82.506,26.121,3.159,0.007,LWC,after leafout,pd
-2022-03-08,-254.192,77.381,-3.285,0.007,MPa,after leafout,md
-2022-03-25,815.637,198.799,4.103,0.006,MPa,after leafout,pd
-2022-04-04,-183.203,48.887,-3.747,0.013,MPa,after leafout,md
-2022-09-15,-345.464,109.2,-3.164,0.004,MPa,after leafout,md
-2022-03-08,-3.922,0.063,-62.293,0.01,LWA,whole timeframe,pd
-2022-03-25,1.273,0.048,26.763,0.001,LWA,whole timeframe,md
-2022-05-09,0.726,0.294,2.467,0.039,LWA,whole timeframe,pd
-2022-04-04,-117.312,23.333,-5.028,0.007,MPa,whole timeframe,md
-2022-05-23,139.394,64.504,2.161,0.049,MPa,whole timeframe,md
+analysis,variable,time,date_wp,r_squared,p_value
+dcwc_alldata,water_potential,md,2022-04-04,0.863,0.007
+dcwc_alldata,water_potential,md,2022-05-23,0.25,0.049
+dcwc_alldata,lwa_g_cm2,pd,2022-03-08,1,0.01
+dcwc_alldata,lwa_g_cm2,pd,2022-05-09,0.432,0.039
+dcwc_alldata,lwa_g_cm2,md,2022-03-25,0.997,0.001
+dcwc_beforeleafout,lwc_mean,pd,2022-09-15,0.239,0.015
+dcwc_beforeleafout,lwc_mean,pd,2022-08-18,0.478,0.013
+dcwc_afterleafout,water_potential,md,2022-09-15,0.263,0.004
+dcwc_afterleafout,water_potential,md,2022-03-08,0.473,0.007
+dcwc_afterleafout,water_potential,md,2022-04-04,0.737,0.013
+dcwc_afterleafout,water_potential,pd,2022-03-25,0.737,0.006
+dcwc_afterleafout,lwa_g_cm2,pd,2022-04-04,0.316,0.023
+dcwc_afterleafout,lwa_g_cm2,md,2022-04-13,0.508,0.004
+dcwc_afterleafout,lwa_g_cm2,pd,2022-03-08,0.971,0.014
+dcwc_afterleafout,lwc_mean,pd,2022-04-04,0.55,0
+dcwc_afterleafout,lwc_mean,md,2022-04-25,0.322,0.003
+dcwc_afterleafout,lwc_mean,md,2022-05-09,0.289,0.006
+dcwc_afterleafout,lwc_mean,pd,2022-05-09,0.416,0.007
+dcwc_afterleafout,lma_g_cm2,NA,2022-04-04,0.461,0.001
+dcwc_afterleafout,lma_g_cm2,NA,2022-04-13,0.351,0.026
+dcwc_afterleafout,lma_g_cm2,NA,2022-03-25,0.751,0.001
+dcwc_justmay,water_potential,pd,2022-07-19,0.277,0.025
+dcwc_justmay,water_potential,md,2022-08-18,0.449,0.005
+dcwc_justmay,water_potential,pd,2022-08-18,0.466,0.004
+dcwc_justmay,lwc_mean,md,2022-09-15,0.343,0.028
+dcwc_justmay,lma_g_cm2,NA,2022-03-08,0.456,0.003
+dcwc_justmay,lma_g_cm2,NA,2022-04-04,0.421,0.043
+dcwc_justmay,lma_g_cm2,NA,2022-08-18,0.15,0.028

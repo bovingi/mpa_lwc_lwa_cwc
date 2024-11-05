@@ -2277,7 +2277,7 @@ filtered_data %>%
 data <- filtered_data %>% 
   filter(time_season == "after leafout") %>% 
   distinct() %>% 
-  drop_na(water_potential, cwc) %>% 
+  drop_na(cwc) %>% 
   group_by(tree) %>% 
   mutate(COUNT = n()) %>% 
   filter(!(COUNT == 1)) %>% 
@@ -2295,6 +2295,8 @@ data %>%
   ggplot(aes(y = cwc, x = date_wp, color = as.factor(tree))) + 
   geom_point() +
   geom_smooth(method = "lm", se = F)
+
+unique(data$date_wp)
 ```
 
 
@@ -2550,7 +2552,7 @@ Early season:
 data <- filtered_data  %>% 
   filter(time_season == "before leafout") %>% 
   distinct() %>% 
-  drop_na(water_potential, cwc) %>% 
+  drop_na(cwc) %>% 
   group_by(tree) %>% 
   mutate(COUNT = n()) %>% 
   filter(!(COUNT == 1)) %>% 
@@ -2802,7 +2804,7 @@ filtered_data_lma %>%
 data <- filtered_data  %>% 
   filter(week %in% c(18:21)) %>% 
   distinct() %>% 
-  drop_na(water_potential, cwc) %>% 
+  drop_na(cwc) %>% 
   group_by(tree) %>% 
   mutate(COUNT = n()) %>% 
   filter(!(COUNT == 1)) %>% 

@@ -944,6 +944,12 @@ ggsave(here("figures", "qudo figures", "CWC", "combined_plots_lwa_qudo"), combin
 #------
 
 #dCWC (change in CWC over time)
+```{r}
+filtered_data %>% 
+  group_by(date_wp, time, week) %>% 
+  count()
+```
+
 
 #####Whole time period after leaf expansion (April 25, May 04, May 09, May 23, Sept. 15)
 ```{r}
