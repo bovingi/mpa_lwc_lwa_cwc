@@ -48,7 +48,7 @@ color_very_many <- scale_color_manual(values = mycolors)
 
 ```{r}
 data_og_cwc <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".csv")), show_col_types = F) %>%  
-  filter(species %in% c("blue oak")) %>% 
+  filter(species %in% c("live oak")) %>% 
   select(tree, week, water_potential, cwc, time_season, time, site, date_wp) %>% 
   mutate(water_potential = -1*water_potential) %>% 
   distinct() %>% 
@@ -172,7 +172,7 @@ library(parallel)
 n_iterations <- 1000
 
 # Number of random trees to sample
-n_sample_trees <- 29  # Adjust as needed based on the number of unique trees
+n_sample_trees <- 15  # Adjust as needed based on the number of unique trees
 
 # Function to calculate the slope for a specific tree within each iteration
 calculate_slope_for_tree <- function(tree_data) {
@@ -258,7 +258,7 @@ dcwc_df_no_outliers <- dcwc_df %>%
 # Print the cleaned dataset without outliers
 print(dcwc_df_no_outliers)
 
-dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_afterleafout_df_no_outliers.csv"))
+dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_quke_afterleafout_df_no_outliers.csv"))
 ```
 
 Early season: 
@@ -300,7 +300,7 @@ library(parallel)
 n_iterations <- 1000
 
 # Number of random trees to sample
-n_sample_trees <- 28  # Adjust as needed based on the number of unique trees
+n_sample_trees <- 13  # Adjust as needed based on the number of unique trees
 
 # Function to calculate the slope for a specific tree within each iteration
 calculate_slope_for_tree <- function(tree_data) {
@@ -380,7 +380,7 @@ dcwc_df_no_outliers <- dcwc_df %>%
 # Print the cleaned dataset without outliers
 print(dcwc_df_no_outliers)
 
-dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_beforeleafout_df_no_outliers.csv"))
+dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_quke_beforeleafout_df_no_outliers.csv"))
 ```
 
 
@@ -419,7 +419,7 @@ cat("Number of unique trees in the dataset:", num_unique_trees, "\n")
 n_iterations <- 1000
 
 # Number of random trees to sample
-n_sample_trees <- 22  # Adjust as needed based on the number of unique trees
+n_sample_trees <- 15  # Adjust as needed based on the number of unique trees
 
 # Function to calculate the slope for a specific tree within each iteration
 calculate_slope_for_tree <- function(tree_data) {
@@ -499,7 +499,7 @@ dcwc_df_no_outliers <- dcwc_df %>%
 # Print the cleaned dataset without outliers
 print(dcwc_df_no_outliers)
 
-dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_justmay_df_no_outliers.csv"))
+dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_quke_justmay_df_no_outliers.csv"))
 ```
 
 
@@ -626,7 +626,7 @@ dcwc_df_no_outliers <- dcwc_df %>%
 # Print the cleaned dataset without outliers
 print(dcwc_df_no_outliers)
 
-dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_wholedaterange_df_no_outliers.csv"))
+dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_quke_wholedaterange_df_no_outliers.csv"))
 ```
 #TABLE: 
 
@@ -634,51 +634,53 @@ Need dCWC, MPa, LWmass, LWarea, LMA
 
 ```{r}
 #from dCWC calculated above: 
-dcwc_wholedaterange <- read_csv(here("processed-data", "dcwc_wholedaterange_df_no_outliers.csv")) 
+dcwc_wholedaterange <- read_csv(here("processed-data", "dcwc_quke_wholedaterange_df_no_outliers.csv")) 
 
-dcwc_beforeleafout <- read_csv(here("processed-data", "dcwc_beforeleafout_df_no_outliers.csv")) 
+dcwc_beforeleafout <- read_csv(here("processed-data", "dcwc_quke_beforeleafout_df_no_outliers.csv")) 
 
-dcwc_afterleafout <- read_csv(here("processed-data", "dcwc_afterleafout_df_no_outliers.csv")) 
+dcwc_afterleafout <- read_csv(here("processed-data", "dcwc_quke_afterleafout_df_no_outliers.csv")) 
 
-dcwc_justmay <- read_csv(here("processed-data", "dcwc_justmay_df_no_outliers.csv")) 
+dcwc_justmay <- read_csv(here("processed-data", "dcwc_quke_justmay_df_no_outliers.csv")) 
 
 #lma, mpa, and lwmass and lwarea data: 
-data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
+data_quke_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
  # filter(time %in% c("md")) %>% 
   group_by(tree, week) %>% 
   mutate(lma_g_cm2 = mean(lma_g_cm2, na.rm = T), 
          water_potential = -1*water_potential) %>% 
-  filter(species %in% c("blue oak")) %>% 
+  filter(species %in% c("live oak")) %>% 
   select(week, tree, time, species, lma_g_cm2, water_potential, lwc_mean, lwa_g_cm2) %>% 
   distinct()
 
 
-dcwc_alldata <- merge(dcwc_wholedaterange, data_qudo_lma, by = c("tree", "week"), all = T) %>% 
+dcwc_alldata <- merge(dcwc_wholedaterange, data_quke_lma, by = c("tree", "week"), all = T) %>% 
   distinct() %>%
   group_by(tree) %>% 
   fill(c(slope), .direction = "downup") %>% 
   ungroup()
 
-dcwc_beforeleafout<- merge(dcwc_beforeleafout , data_qudo_lma, by = c("tree", "week"), all = T) %>% 
+dcwc_beforeleafout<- merge(dcwc_beforeleafout , data_quke_lma, by = c("tree", "week"), all = T) %>% 
   distinct() %>% 
   distinct() %>%
   group_by(tree) %>% 
   fill(c(slope), .direction = "downup") %>% 
   ungroup()
 
-dcwc_afterleafout<- merge(dcwc_afterleafout , data_qudo_lma, by = c("tree", "week"), all = T) %>% 
+dcwc_afterleafout<- merge(dcwc_afterleafout , data_quke_lma, by = c("tree", "week"), all = T) %>% 
   distinct() %>% 
   distinct() %>%
   group_by(tree) %>% 
   fill(c(slope), .direction = "downup") %>% 
   ungroup()
 
-dcwc_justmay <-  merge(dcwc_justmay, data_qudo_lma, by = c("tree", "week"), all = T) %>% 
+dcwc_justmay <-  merge(dcwc_justmay, data_quke_lma, by = c("tree", "week"), all = T) %>% 
   distinct() %>% 
   distinct() %>%
   group_by(tree) %>% 
   fill(c(slope), .direction = "downup") %>% 
   ungroup()
+
+dcwc_allanalyses <- bind_rows(dcwc_afterleafout, dcwc_beforeleafout, dcwc_wholedaterange, dcwc_justmay)
 ```
 
 #2. TABLE: Test for significance
@@ -748,7 +750,7 @@ sig_mods_all <- as.data.frame(sig_mods_all) %>%
 sig_mods_all
 
 write_csv(sig_mods_all %>%
-   mutate(across(where(is.numeric), ~ round(., 3))), here(here("processed-data", "model results", "table_sx.csv")))
+   mutate(across(where(is.numeric), ~ round(., 3))), here(here("processed-data", "model results", "table_quke_sx.csv")))
 
 sig_mods_all %>% 
   group_by(analysis) %>% 
@@ -766,7 +768,7 @@ sig_mods_all%>%
 fig_data <- merge(dcwc_alldata, sig_mods_all, by = c("date_wp", "time"), all.y = T) %>% 
   mutate(r_squared = round(r_squared, 3)) %>% 
   filter(!(variable == "lma_g_cm2")) %>% 
-    ungroup()
+    ungroup() 
 
 fig_data %>% 
   group_by(variable, date_wp, time) %>% 
@@ -803,16 +805,19 @@ mpa_plot <- fig_data %>%
      legend.text = element_text(size = 13), 
      legend.title = element_text(size = 16),
      legend.margin=margin(0,0,0,0),
-      legend.box.margin=margin(-5,-8,-8,-8),
-    plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt")
+      legend.box.margin=margin(-5,-8,-8,-8)#,
+   # plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt")
     ) +
-  facet_wrap(~~analysis*date_wp, scales = "free") +
-  facet_grid(date_wp ~analysis, scales = "free") +
+  facet_wrap(~date_wp, scales = "free", nrow = 5) +
+  #facet_grid(~date_wp, scales = "free") +
   geom_smooth(method = "lm", se = F,size = .5) +
   labs(y = "Water potential (Psi)", 
        x = "Slope", 
-       color = "R Squared")
+       color = "R^2")
 mpa_plot
+
+# Save plot
+ggsave(here::here("figures", "quke figures", "dcwc_mpa_alldates_SI.jpg"), plot = mpa_plot, width = 10, height = 10)
 ```
 
 ```{r}
@@ -844,7 +849,7 @@ lwc_plot <- fig_data %>%
     plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt")
     ) +
   facet_wrap(date_wp~analysis, scales = "free") +
-  facet_grid(date_wp ~analysis, scales = "free") +
+  facet_grid(~date_wp, scales = "free") +
   geom_smooth(method = "lm", se = F,size = .5) +
   labs(y = "LWmass (g)", 
        x = "Slope", 
@@ -881,7 +886,7 @@ lwa_plot <- fig_data %>%
     plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt")
     ) +
   facet_wrap(~analysis*date_wp, scales = "free") +
-  facet_grid(date_wp ~analysis, scales = "free") +
+  facet_grid(~date_wp, scales = "free") +
   geom_smooth(method = "lm", se = F,size = .5) +
   labs(y = "LWarea (g/cm2)", 
        x = "Slope", 
@@ -925,7 +930,7 @@ lma_plot <- lma_fig_data %>%
     plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt")
     ) +
   facet_wrap(~analysis*date_wp, scales = "free") +
-  facet_grid(date_wp ~analysis, scales = "free") +
+  facet_grid(~date_wp , scales = "free") +
   geom_smooth(method = "lm", se = F,size = .5) +
   labs(y = "LMA (g/cm2)",
        color = "R Squared",
@@ -989,12 +994,13 @@ dcwc_plot <- filtered_data %>%
   common_theme +
   annotate("text", x = as.Date("2022-03-05"), y = max(filtered_data$cwc, na.rm = TRUE), 
            label = "A", size = 6, fontface = "bold") +
-  color_very_many
+  color_very_many +
+  theme(plot.margin = unit(c(0.5, 0.5, 0, 0.5), "cm"))
 
 # Plot 2: dcwc_mpa_plot with separate R-squared annotations and distinct labels
 dcwc_mpa_plot <- fig_data %>% 
   filter(variable == "water_potential", 
-         analysis == "dcwc_afterleafout",
+         analysis == "dcwc_alldata",
          date_wp %in% c("2022-09-15", "2022-03-08")) %>% 
   mutate(date_wp = as.Date(date_wp),  # Ensure Date type
          slope = as.numeric(slope),   # Ensure numeric
@@ -1002,6 +1008,7 @@ dcwc_mpa_plot <- fig_data %>%
   select(slope, water_potential, time, date_wp, analysis, r_squared) %>% 
   ggplot(aes(y = water_potential, 
              x = slope, 
+             shape = time,
              color = as.factor(date_wp))) + 
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, size = 0.5) +
@@ -1015,20 +1022,23 @@ dcwc_mpa_plot <- fig_data %>%
   color_before_after +
   # Add R-squared annotations for each facet separately
   geom_text(
-    data = fig_data %>% filter(date_wp == "2022-03-08"),
+    data = fig_data %>% filter(date_wp == "2022-03-08", variable == "water_potential", 
+         analysis == "dcwc_alldata"),
     aes(label = paste("R-squared:", round(r_squared, 3))),
     x = -Inf, y = -Inf, hjust = -0.1, vjust = -0.5, size = 4, color = "black",
     inherit.aes = FALSE
   ) +
   geom_text(
-    data = fig_data %>% filter(date_wp == "2022-09-15"),
+    data = fig_data %>% filter(date_wp == "2022-09-15", variable == "water_potential", 
+         analysis == "dcwc_alldata"),
     aes(label = paste("R-squared:", round(r_squared, 3))),
     x = -Inf, y = -Inf, hjust = -0.1, vjust = -0.5, size = 4, color = "black",
     inherit.aes = FALSE
   ) +
   # Add "B" and "C" labels in the upper left of each facet
   geom_text(
-    data = fig_data %>% filter(date_wp == "2022-03-08"),
+    data = fig_data %>% filter(date_wp == "2022-03-08", variable == "water_potential", 
+         analysis == "dcwc_alldata"),
     aes(label = "B"),
     x = -Inf, y = Inf, hjust = -0.2, vjust = 1.5, size = 6, fontface = "bold",
     inherit.aes = FALSE
@@ -1038,7 +1048,8 @@ dcwc_mpa_plot <- fig_data %>%
     aes(label = "C"),
     x = -Inf, y = Inf, hjust = -0.2, vjust = 1.5, size = 6, fontface = "bold",
     inherit.aes = FALSE
-  )
+  ) +
+  theme(legend.position = "right")
 
 # Combine plots with final layout
 final_plot <- dcwc_plot / dcwc_mpa_plot + 
@@ -1049,7 +1060,7 @@ final_plot <- dcwc_plot / dcwc_mpa_plot +
 print(final_plot)
 
 # Save plot
-ggsave(here::here("figures", "qudo figures", "dcwc_SI.jpg"), plot = final_plot, width = 8, height = 8)
+ggsave(here::here("figures", "quke figures", "dcwc_SI.jpg"), plot = final_plot, width = 8, height = 8)
 ```
 
 
