@@ -24,7 +24,7 @@ dataversion <- paste0("Data_", datver)
 ```{r}
 #CWC data: 
 data_lwc_cwc <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".csv")), show_col_types = F) %>%  
-  filter(species %in% c("blue oak")) %>% 
+  filter(species %in% c("live oak")) %>% 
   dplyr::select(tree, week,cwc, time_season, time) %>% 
   #mutate(lwc_mean = -1*lwc_mean) %>% 
   distinct() %>% 
@@ -33,8 +33,13 @@ data_lwc_cwc <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".c
   filter(!week %in% c(11, 9)) #week 11 only has 9 midday measurements and acts really odd (2022-03-15), 9 just had 3 measurements 
 
 #LWA data: 
-data_og_lwc  <- read_csv(here::here("processed-data", paste0("analysis",datver,".csv")), show_col_types = FALSE) %>% 
+data_og_lwc  <- read_csv(here::here("processed-data", paste0("analysis_bothspp",datver,".csv")), show_col_types = FALSE) %>% 
+  filter(species == "live oak") %>% 
   distinct() %>% 
+ # group_by(week, time) %>% 
+ # filter(n() >= 10) %>% #only run on weeks where we have a decent number of samples
+#  ungroup() %>% 
+#  filter(!week == 21) %>% #this week doesn't have very many samples,
   mutate(time_season = case_when(
     week  <= 17 ~ "before leafout", 
     week > 17 ~ "after leafout", 
@@ -42,20 +47,13 @@ data_og_lwc  <- read_csv(here::here("processed-data", paste0("analysis",datver,"
   )) %>% 
   select(-plot) %>% 
   distinct() %>% 
-  filter(!(week == 33)) %>% #something is wrong with week 33 and I dont know what LWA seems weirdly too similar for PD and MDs
-  filter(!(week %in% 19 & tree %in% c(2009) & time %in% c("pd"))) %>%
-  filter(!(week %in% 14 & tree %in% c(2014) & time %in% c("md"))) %>% #LWA seems off, much too high for this week; check scan
-  filter(!(week %in% 37 & tree %in% c(2382, 2383, 2384, 1478, 2015, 2012, 2006))) %>%  #trees from this week seem wrong. 
-  filter(!(week ==21 & tree == 2378))  %>% #something is wrong with this tree, very similar LWA for PD and MD; one is probable wrong!
-  select(tree, week, lwc_mean, time_season, time, species, date_wp) %>% 
-  distinct() %>% 
- # filter(week == 15) %>% 
-  arrange(tree, week, time) 
+  filter(lwc_mean < 2) %>% 
+  filter(!(week == 33)) #only have 2 middays here
 
 data_lwc_cwc <- merge(data_lwc_cwc, data_og_lwc, 
                       by = c("tree", "week", "time_season", "time"),
                       all = TRUE) %>% 
-  rename(lwc_mean = lwc_mean) %>% 
+  #rename(lwc_mean = lwc_mean) %>% 
   group_by(tree, week) %>% 
   fill(c(cwc), .direction = "downup")
   
@@ -172,7 +170,7 @@ n_sample_trees <- 43  # Adjust as needed based on the number of unique trees
 
 # Define the function to calculate the slope for a specific tree
 calculate_slope_for_tree <- function(tree_data) {
-  model <- lm(lwc_mean ~ cwc, data = tree_data)
+  model <- lm(cwc ~ week, data = tree_data)
   coef(model)[2]  # Extract the slope coefficient
 }
 
@@ -983,7 +981,7 @@ combined_plots_all_legend <- grid.arrange(arrangeGrob(combined_plots_all,
                                 widths = c(1, .02)))
 combined_plots_all_legend
 
-ggsave(here("figures", "qudo figures", "CWC", "combined_plots_lwc_qudo"), combined_plots_all_legend, device = "jpg", width = 10, height = 7, dpi = 300)
+ggsave(here("figures", "quke figures", "CWC", "combined_plots_lwc_qudo"), combined_plots_all_legend, device = "jpg", width = 10, height = 7, dpi = 300)
 ```
 
 

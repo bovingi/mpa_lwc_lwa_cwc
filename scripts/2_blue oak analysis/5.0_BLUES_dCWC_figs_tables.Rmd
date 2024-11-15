@@ -47,16 +47,43 @@ color_very_many <- scale_color_manual(values = mycolors)
 ####DATA: 
 
 ```{r}
-data_og_cwc <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".csv")), show_col_types = F) %>%  
-  filter(species %in% c("live oak")) %>% 
+data_og_cwc1 <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".csv")), show_col_types = F) %>%  
+  filter(species %in% c("blue oak")) %>% 
   select(tree, week, water_potential, cwc, time_season, time, site, date_wp) %>% 
   mutate(water_potential = -1*water_potential) %>% 
   distinct() %>% 
    # filter(!tree %in% c(2012, 2011)) %>% 
-  filter(!(tree %in% c(2346))) %>% #this tree seems to have a problem with post-leafout cwc - all 0s - likely becuase the canopy was too small to see. 
-  filter(!week %in% c(11, 9)) %>%  #week 11 only has 9 midday measurements and acts really odd (2022-03-15), 9 just had 3 measurements
-  select(tree, week, date_wp, cwc, time_season) %>% 
-  distinct()
+  filter(!(tree %in% c(2346))) 
+
+data_og_cwc <- data_og_cwc1 %>% #this tree seems to have a problem with post-leafout cwc - all 0s - likely becuase the canopy was too small to see. 
+  filter(time == "md") %>% 
+  filter(!week %in% c(9)) %>%  #week 11 only has 9 midday measurements and acts really odd (2022-03-15), 9 just had 3 measurements
+  # select(tree, week, date_wp, cwc, time_season)  %>% 
+  # mutate(date_new = case_when(
+  #   date_wp %in% c("2022-03-15") ~ "2022-03-08",
+  #   date_wp %in% c("2022-03-23") ~ "2022-03-25",
+  #   date_wp %in% c("2022-03-30","2022-04-06") ~ "2022-04-04",
+  #   date_wp %in% c("2022-04-13") ~ "2022-04-11",
+  #   date_wp %in% c("2022-04-27") ~ "2022-04-25",
+  #   date_wp %in% c("2022-05-04") ~ "2022-05-09",
+  #   date_wp %in% c("2022-05-23") ~ "2022-05-25",
+  #   TRUE ~ as.character(date_wp)
+  # )) %>% 
+  mutate(date_new = case_when(
+   # date_wp %in% c("2022-03-15") ~ "2022-03-08",#CWC also measured on March 15th, keep
+    date_wp %in% c("2022-03-15") ~ "2022-03-16", #overflight on 3/16
+    date_wp %in% c("2022-03-23", "2022-03-25") ~ "2022-03-22", #ok to combine these, CWC only measured on March 222, some MPas on March 23
+    date_wp %in% c("2022-03-30","2022-04-06","2022-04-04") ~ "2022-04-05", #CWC also measured on April 06, just use 04-04
+    date_wp %in% c("2022-04-13", "2022-04-11") ~ "2022-04-12", #CWC also measred on April 11, just keep 
+    date_wp %in% c("2022-04-20") ~ "2022-04-20", #
+    date_wp %in% c("2022-04-27", "2022-04-25") ~ "2022-04-29", #
+    date_wp %in% c("2022-05-04") ~ "2022-05-03",
+    date_wp %in% c("2022-05-09") ~ "2022-05-11",
+    date_wp %in% c("2022-05-09") ~ "2022-05-17", #might not have MPas?
+    date_wp %in% c("2022-05-23", "2022-05-25") ~ "2022-05-29",
+    TRUE ~ as.character(date_wp)
+  )) %>% 
+  mutate(date_wp = ymd(date_new)) #make sure the new dates get included in the right way
 
 # Filter for trees measured "before leafout"
 before_leafout_data <- data_og_cwc  %>%
@@ -258,7 +285,7 @@ dcwc_df_no_outliers <- dcwc_df %>%
 # Print the cleaned dataset without outliers
 print(dcwc_df_no_outliers)
 
-dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_quke_afterleafout_df_no_outliers.csv"))
+dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_qudo_afterleafout_df_no_outliers.csv"))
 ```
 
 Early season: 
@@ -380,13 +407,13 @@ dcwc_df_no_outliers <- dcwc_df %>%
 # Print the cleaned dataset without outliers
 print(dcwc_df_no_outliers)
 
-dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_quke_beforeleafout_df_no_outliers.csv"))
+dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_qudo_beforeleafout_df_no_outliers.csv"))
 ```
 
 
 
 ###Just May (week 18-21)
-```{r}
+```{r, eval =}
 ###dcwc leafout: 
 data <- filtered_data  %>% 
   filter(week %in% c(18:21)) %>% 
@@ -448,6 +475,10 @@ bootstrapped_slopes_list <- mclapply(1:n_iterations, function(i) {
   perform_bootstrap(i, data, n_sample_trees)
 }, mc.cores = detectCores() - 1)
 
+# Filter out NULL elements or non-data frame elements from the list
+bootstrapped_slopes_list <- bootstrapped_slopes_list %>%
+  purrr::keep(~ is.data.frame(.x) && !is.null(.x))
+
 # Combine all bootstrap results into a single data frame
 bootstrapped_slopes_df <- bind_rows(bootstrapped_slopes_list)
 
@@ -499,7 +530,7 @@ dcwc_df_no_outliers <- dcwc_df %>%
 # Print the cleaned dataset without outliers
 print(dcwc_df_no_outliers)
 
-dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_quke_justmay_df_no_outliers.csv"))
+dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_qudo_justmay_df_no_outliers.csv"))
 ```
 
 
@@ -626,7 +657,7 @@ dcwc_df_no_outliers <- dcwc_df %>%
 # Print the cleaned dataset without outliers
 print(dcwc_df_no_outliers)
 
-dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_quke_wholedaterange_df_no_outliers.csv"))
+dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_qudo_wholedaterange_df_no_outliers.csv"))
 ```
 #TABLE: 
 
@@ -634,57 +665,136 @@ Need dCWC, MPa, LWmass, LWarea, LMA
 
 ```{r}
 #from dCWC calculated above: 
-dcwc_wholedaterange <- read_csv(here("processed-data", "dcwc_quke_wholedaterange_df_no_outliers.csv")) 
+dcwc_wholedaterange1 <- read_csv(here("processed-data", "dcwc_qudo_wholedaterange_df_no_outliers.csv")) %>% 
+  mutate(analysis = "whole")
 
-dcwc_beforeleafout <- read_csv(here("processed-data", "dcwc_quke_beforeleafout_df_no_outliers.csv")) 
 
-dcwc_afterleafout <- read_csv(here("processed-data", "dcwc_quke_afterleafout_df_no_outliers.csv")) 
+dcwc_beforeleafout1 <- read_csv(here("processed-data", "dcwc_qudo_beforeleafout_df_no_outliers.csv"))%>% 
+  mutate(analysis = "before")
+ 
 
-dcwc_justmay <- read_csv(here("processed-data", "dcwc_quke_justmay_df_no_outliers.csv")) 
+dcwc_afterleafout1 <- read_csv(here("processed-data", "dcwc_qudo_afterleafout_df_no_outliers.csv")) %>% 
+  mutate(analysis = "after")
+
+
+dcwc_justmay1 <- read_csv(here("processed-data", "dcwc_qudo_justmay_df_no_outliers.csv")) %>% 
+  mutate(analysis = "just may")
 
 #lma, mpa, and lwmass and lwarea data: 
-data_quke_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
+data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
  # filter(time %in% c("md")) %>% 
   group_by(tree, week) %>% 
   mutate(lma_g_cm2 = mean(lma_g_cm2, na.rm = T), 
          water_potential = -1*water_potential) %>% 
-  filter(species %in% c("live oak")) %>% 
-  select(week, tree, time, species, lma_g_cm2, water_potential, lwc_mean, lwa_g_cm2) %>% 
-  distinct()
+  ungroup() %>% 
+  group_by(tree, date_wp, time) %>% 
+   mutate(lwa_g_cm2 = mean(lwa_g_cm2, na.rm = T)) %>% 
+  ungroup() %>% 
+  filter(species %in% c("blue oak")) %>% 
+  select(week, tree, time, species, lma_g_cm2, water_potential, lwc_mean, lwa_g_cm2, date_wp) %>% 
+  distinct() %>% 
+#So that dates line up across all analyses:
+  mutate(date_new = case_when(
+   # date_wp %in% c("2022-03-15") ~ "2022-03-08",#CWC also measured on March 15th, keep
+    date_wp %in% c("2022-03-15") ~ "2022-03-16", #overflight on 3/16
+    date_wp %in% c("2022-03-23", "2022-03-25") ~ "2022-03-22", #ok to combine these, CWC only measured on March 222, some MPas on March 23
+    date_wp %in% c("2022-03-30","2022-04-06","2022-04-04") ~ "2022-04-05", #CWC also measured on April 06, just use 04-04
+    date_wp %in% c("2022-04-13", "2022-04-11") ~ "2022-04-12", #CWC also measred on April 11, just keep 
+    date_wp %in% c("2022-04-20") ~ "2022-04-20", #
+    date_wp %in% c("2022-04-27", "2022-04-25") ~ "2022-04-29", #
+    date_wp %in% c("2022-05-04") ~ "2022-05-03",
+    date_wp %in% c("2022-05-09") ~ "2022-05-11",
+    #date_wp %in% c("2022-05-09") ~ "2022-05-17", #might not have MPas?
+    date_wp %in% c("2022-05-23", "2022-05-25") ~ "2022-05-29",
+    TRUE ~ as.character(date_wp)
+  )) %>% 
+  mutate(date_wp = ymd(date_new)) 
+#Only want dates that we have good qudo data for:
+  # filter(date_wp %in% c("2022-03-08",
+  #                       "2022-04-04",
+  #                       "2022-04-11",
+  #                       "2022-05-23",
+  #                       "2022-07-19",
+  #                       "2022-08-18",
+  #                       "2022-09-15"
+  #                       ))
 
 
-dcwc_alldata <- merge(dcwc_wholedaterange, data_quke_lma, by = c("tree", "week"), all = T) %>% 
+```
+
+
+```{r}
+dcwc_alldata <- merge(dcwc_wholedaterange1, data_qudo_lma, by = c("tree", "week","time", "water_potential", "date_wp"), all = T) %>% 
   distinct() %>%
   group_by(tree) %>% 
   fill(c(slope), .direction = "downup") %>% 
-  ungroup()
+  ungroup() %>% 
+  group_by(week) %>% 
+  fill(c("date_wp"), .direction = "downup") 
 
-dcwc_beforeleafout<- merge(dcwc_beforeleafout , data_quke_lma, by = c("tree", "week"), all = T) %>% 
+dcwc_beforeleafout<- merge(dcwc_beforeleafout1 , data_qudo_lma, by = c("tree", "week","time", "water_potential", "date_wp"), all = T) %>% 
   distinct() %>% 
   distinct() %>%
   group_by(tree) %>% 
   fill(c(slope), .direction = "downup") %>% 
-  ungroup()
+  ungroup() %>% 
+  group_by(week) %>% 
+  fill(c("date_wp"), .direction = "downup") 
+  
 
-dcwc_afterleafout<- merge(dcwc_afterleafout , data_quke_lma, by = c("tree", "week"), all = T) %>% 
+dcwc_afterleafout<- merge(dcwc_afterleafout1, data_qudo_lma, by = c("tree", "week","time", "water_potential", "date_wp"), all = T) %>% 
   distinct() %>% 
   distinct() %>%
   group_by(tree) %>% 
   fill(c(slope), .direction = "downup") %>% 
-  ungroup()
+  ungroup() %>% 
+  group_by(week) %>% 
+  fill(c("date_wp"), .direction = "downup") 
 
-dcwc_justmay <-  merge(dcwc_justmay, data_quke_lma, by = c("tree", "week"), all = T) %>% 
+dcwc_justmay <-  merge(dcwc_justmay1, data_qudo_lma, by = c("tree", "week", "time", "water_potential", "date_wp"), all = T) %>% 
   distinct() %>% 
   distinct() %>%
   group_by(tree) %>% 
   fill(c(slope), .direction = "downup") %>% 
-  ungroup()
+  ungroup() %>% 
+  group_by(week) %>% 
+  fill(c("date_wp"), .direction = "downup") 
 
-dcwc_allanalyses <- bind_rows(dcwc_afterleafout, dcwc_beforeleafout, dcwc_wholedaterange, dcwc_justmay)
+dcwc_allanalyses <- bind_rows(dcwc_afterleafout, dcwc_beforeleafout, dcwc_alldata, dcwc_justmay) %>% 
+  drop_na(slope) %>% 
+ # filter(date_wp %in% c("2022-03-08")) %>% 
+  distinct() %>% 
+  group_by(week) %>% 
+  fill(c("date_wp"), .direction = "downup") 
+#Only want dates that we have good qudo data for:
+  # filter(date_wp %in% c("2022-03-08",
+  #                       "2022-04-04",
+  #                       "2022-04-11",
+  #                       "2022-05-23",
+  #                       "2022-07-19",
+  #                       "2022-08-18",
+  #                       "2022-09-15"
+  #                       ))
+
+#Potential combinations: 
+dcwc_allanalyses %>% 
+  drop_na(slope, water_potential) %>% 
+  group_by(week, time, date_wp) %>% 
+  count() 
+
+#Potential combinations: 
+df <- dcwc_allanalyses %>% 
+  drop_na(slope, water_potential) %>% 
+  select(date_wp, time) %>% 
+  distinct() %>% 
+  #group_by(date_wp, time, analysis) %>% 
+  count() 
+df
+
+
 ```
 
 #2. TABLE: Test for significance
-
 ```{r}
 library(dplyr)
 library(tidyr)
@@ -710,11 +820,7 @@ for (analysis_name in names(data_list)) {
   for (variable in variables) {
     
     # Set grouping based on the variable
-    if (variable == "lma_g_cm2") {
-      grouping_vars <- c("date_wp")
-    } else {
-      grouping_vars <- c("date_wp", "time")
-    }
+    grouping_vars <- if (variable == "lma_g_cm2") c("date_wp") else c("date_wp", "time")
     
     # Run the model on each group and store results
     results <- analysis_data %>%
@@ -731,6 +837,13 @@ for (analysis_name in names(data_list)) {
             NA  # Return NA if not enough coefficients
           }
         }),
+        slope_estimate = map_dbl(model, ~ {
+          if (!is.null(.x) && nrow(summary(.x)$coefficients) >= 2) {
+            summary(.x)$coefficients[2, 1]  # Extract slope estimate
+          } else {
+            NA  # Return NA if not available
+          }
+        }),
         analysis = analysis_name,
         variable = variable
       ) %>%
@@ -738,37 +851,38 @@ for (analysis_name in names(data_list)) {
       ungroup()
     
     # Add results to sig_mods_all
-    sig_mods_all <- bind_rows(sig_mods_all, results)
+    sig_mods_all <- bind_rows(sig_mods_all, results) 
   }
 }
 
 # Finalize sig_mods_all as a single data frame
-sig_mods_all <- as.data.frame(sig_mods_all) %>% 
+sig_mods_all_sig <- as.data.frame(sig_mods_all) %>% 
   janitor::clean_names() %>% 
-  filter(p_value < 0.05) 
+  filter(p_value < 0.05) %>% 
+  filter(!(analysis == "dcwc_justmay"))
 
-sig_mods_all
+# Write results to CSV, rounding numeric columns
+write_csv(sig_mods_all_sig %>%
+   mutate(across(where(is.numeric), ~ round(., 3))), here(here("processed-data", "model results", "table_qudo_sx.csv")))
 
-write_csv(sig_mods_all %>%
-   mutate(across(where(is.numeric), ~ round(., 3))), here(here("processed-data", "model results", "table_quke_sx.csv")))
+# Display summaries
+sig_mods_all_sig %>% group_by(analysis) %>% count() 
+sig_mods_all_sig %>% group_by(analysis, variable) %>% count()
 
-sig_mods_all %>% 
-  group_by(analysis) %>% 
-  count() 
+# Show the final `sig_mods_all_sig` with the additional `slope_estimate` column
+sig_mods_all_sig 
 
-sig_mods_all%>% 
-  group_by(analysis, variable) %>% 
-  count()
 ```
-
-
-
-#3. FIGURES: dCWC and the best dates: 
+#2.5. FIGURES: All dCWC relationships visualized:
 ```{r}
-fig_data <- merge(dcwc_alldata, sig_mods_all, by = c("date_wp", "time"), all.y = T) %>% 
+fig_data <- merge(dcwc_alldata %>% select(-analysis), sig_mods_all_sig, by = c("date_wp", "time"), all.y = T) %>% 
   mutate(r_squared = round(r_squared, 3)) %>% 
   filter(!(variable == "lma_g_cm2")) %>% 
-    ungroup() 
+  ungroup() %>% 
+  distinct() %>% 
+  dplyr::group_by(variable, date_wp, time, analysis) %>% 
+  mutate(count = n()) %>% 
+  filter(count > 5) 
 
 fig_data %>% 
   group_by(variable, date_wp, time) %>% 
@@ -777,13 +891,68 @@ fig_data %>%
 dcwc_alldata %>% 
   group_by(week, date_wp, time) %>% 
   count()
-```
 
-- Best dates:
+
+# Step 1: Create variable_new column based on specified conditions
+df <- sig_mods_all %>%
+  filter(!is.na(time)) %>% 
+  mutate(variable_new = ifelse(variable == "water_potential", paste(variable, time, sep = "_"), variable)) %>%
+  select(date_wp, slope_estimate, analysis, p_value, variable_new) %>% 
+  distinct() %>% 
+  filter(!(variable_new %in% c("water_potential_md") & slope_estimate < -0.005)) %>% 
+  filter(!(variable_new %in% c("lwc_mean") & slope_estimate < -0.3)) %>% 
+#  filter(slope_estimate < 10) %>% 
+  # filter(!(date_wp %in% c("2022-03-23",
+  #                         "2022-03-30",
+  #                        "2022-04-06",
+  #                        "2022-04-13"
+  #                       # "2022-05-23",
+  #                       # "2022-07-19",
+  #                       # "2022-08-18",
+  #                       # "2022-09-15"
+  #                       ))) %>%
+  filter(!(analysis == "dcwc_beforeleafout"))
+
+# Step 2: Plotting
+ggplot(df, aes(x = date_wp, y = slope_estimate, color = analysis)) +
+  geom_hline(yintercept = 0) +
+  # ggbeeswarm::geom_beeswarm(aes(size = ifelse(p_value < 0.05, 3, 1)), 
+  #             position = position_jitter(width = 1, height = 0)) +
+   geom_jitter(aes(size = ifelse(p_value < 0.05, 3, 1)), 
+              position = position_jitter(width = 3, height = 0)) +
+  facet_wrap(~ variable_new, scales = "free", labeller = label_wrap_gen(multi_line = TRUE)) +
+  labs(x = "Date", 
+       y = "Slope", 
+       color = "Analysis") +
+  scale_size_identity() +  # Ensures that the size mapping from `ifelse` is used directly
+  theme(
+    strip.text = element_text(size = 10),
+    legend.position = "bottom"
+  ) +
+  scale_x_date(date_labels="%d %b %Y", breaks = unique(df$date_wp)) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=.5)) +
+  scale_color_manual(values = c("#c969a1", "#ffbb44","#122451"))
+```
+#3. FIGURES: dCWC and the best dates: 
 ```{r}
 mpa_plot <- fig_data %>% 
-  filter(variable == "water_potential"
+  filter(variable == "water_potential", 
+         analysis == "dcwc_afterleafout"
         ) %>% 
+  # filter(date_wp %in% c("2022-03-08",
+  #                       "2022-04-05",
+  #                       "2022-04-12",
+  #                       "2022-04-29",
+  #                       "2022-05-11",
+  #                       "2022-05-29",
+  #                       "2022-07-19",
+  #                       "2022-08-18",
+  #                       "2022-09-15"
+       #                 )) %>% 
+  mutate(time = case_when(
+    time %in% c("md") ~ "Midday", 
+    time %in% c("pd") ~ "Predawn"
+  )) %>% 
   select(slope, water_potential, time, date_wp, analysis, r_squared) %>% 
   ggplot(aes( y = water_potential, 
               x = slope, 
@@ -803,26 +972,30 @@ mpa_plot <- fig_data %>%
      # axis.title.x = element_blank(),
     # axis.title.y = element_blank(),
      legend.text = element_text(size = 13), 
-     legend.title = element_text(size = 16),
-     legend.margin=margin(0,0,0,0),
-      legend.box.margin=margin(-5,-8,-8,-8)#,
+     legend.title = element_text(size = 16)
+     #legend.margin=margin(0,0,0,0),
+    #  legend.box.margin=margin(-5,-8,-8,-8)#,
    # plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt")
     ) +
-  facet_wrap(~date_wp, scales = "free", nrow = 5) +
+  facet_wrap(~date_wp, #scales = "free", 
+             ncol = 4) +
   #facet_grid(~date_wp, scales = "free") +
   geom_smooth(method = "lm", se = F,size = .5) +
   labs(y = "Water potential (Psi)", 
        x = "Slope", 
-       color = "R^2")
+       shape= "Time",
+       color = "R^2")  +
+  scale_color_manual(values = c("#c969a1", "#ce4441", "#ee8577", "#eb7926", "#ffbb44", "#859b6c", "#62929a", "#004f63", "#122451"))
 mpa_plot
 
 # Save plot
-ggsave(here::here("figures", "quke figures", "dcwc_mpa_alldates_SI.jpg"), plot = mpa_plot, width = 10, height = 10)
+ggsave(here::here("figures", "qudo figures", "dcwc_mpa_alldates_SI.jpg"), plot = mpa_plot, width = 10, height = 5)
 ```
 
 ```{r}
 lwc_plot <- fig_data %>% 
-  filter(variable == "lwc_mean"
+  filter(variable == "lwc_mean", 
+         analysis == "dcwc_alldata"
         ) %>% 
   select(slope, lwc_mean, time, date_wp, analysis, r_squared) %>% 
   ggplot(aes( y = lwc_mean, 
@@ -859,7 +1032,8 @@ lwc_plot
 
 ```{r}
 lwa_plot <- fig_data %>% 
-  filter(variable == "lwa_g_cm2"
+  filter(variable == "lwa_g_cm2", 
+         analysis == "dcwc_alldata"
         ) %>% 
   select(slope, lwa_g_cm2, time, date_wp, analysis, r_squared) %>% 
   ggplot(aes( y = lwa_g_cm2, 
@@ -897,15 +1071,16 @@ lwa_plot
 
 
 ```{r}
-lma_fig_data <- merge(dcwc_alldata, sig_mods_all, by = c("date_wp"), all = T) %>% 
+lma_fig_data <- merge(dcwc_alldata %>% select(-analysis), sig_mods_all_sig, by = c("date_wp"), all = T) %>% 
   mutate(r_squared = round(r_squared, 3)) %>% 
   filter((variable == "lma_g_cm2")) %>% 
     ungroup()
   
 lma_plot <- lma_fig_data %>% 
-  filter(variable == "lma_g_cm2"
+  filter(variable == "lma_g_cm2", 
+         analysis == "dcwc_alldata"
         ) %>% 
-  select(slope, lma_g_cm2, date_wp, analysis, r_squared) %>% 
+  select(slope, lma_g_cm2, date_wp, r_squared) %>% 
   ggplot(aes( y = lma_g_cm2, 
               x = slope, 
               #shape = as.factor(analysis),
@@ -971,7 +1146,7 @@ common_theme <- theme(
 
 # Plot 1: dcwc_plot
 dcwc_plot <- filtered_data %>% 
-  filter(tree %in% c(dcwc_wholedaterange$tree)) %>% 
+  filter(tree %in% c(dcwc_wholedaterange1$tree)) %>% 
   drop_na(cwc) %>% 
   group_by(tree) %>% 
   mutate(COUNT = n()) %>% 
@@ -992,16 +1167,17 @@ dcwc_plot <- filtered_data %>%
   geom_smooth(method = "lm", se = FALSE, size = 0.5) +
   labs(y = "CWC (g/cm2)", x = "Date") +
   common_theme +
-  annotate("text", x = as.Date("2022-03-05"), y = max(filtered_data$cwc, na.rm = TRUE), 
+  annotate("text", x = as.Date("2022-03-08"), y = max(filtered_data$cwc, na.rm = TRUE), 
            label = "A", size = 6, fontface = "bold") +
   color_very_many +
   theme(plot.margin = unit(c(0.5, 0.5, 0, 0.5), "cm"))
+dcwc_plot
 
 # Plot 2: dcwc_mpa_plot with separate R-squared annotations and distinct labels
 dcwc_mpa_plot <- fig_data %>% 
   filter(variable == "water_potential", 
          analysis == "dcwc_alldata",
-         date_wp %in% c("2022-09-15", "2022-03-08")) %>% 
+         date_wp %in% c("2022-09-15", "2022-04-12")) %>% 
   mutate(date_wp = as.Date(date_wp),  # Ensure Date type
          slope = as.numeric(slope),   # Ensure numeric
          r_squared = as.numeric(r_squared)) %>%  # Convert r_squared to numeric
@@ -1060,9 +1236,8 @@ final_plot <- dcwc_plot / dcwc_mpa_plot +
 print(final_plot)
 
 # Save plot
-ggsave(here::here("figures", "quke figures", "dcwc_SI.jpg"), plot = final_plot, width = 8, height = 8)
+ggsave(here::here("figures", "qudo figures", "dcwc_SI.jpg"), plot = final_plot, width = 8, height = 8)
 ```
-
 
 
 

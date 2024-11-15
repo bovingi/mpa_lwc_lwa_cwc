@@ -22,7 +22,7 @@ library(tidyverse)
 library(lubridate)
 library(readxl)
 library(gridExtra)
-library(calecopal)
+#library(calecopal)
 library(rstatix)
 library(vars)
 library(MuMIn)
@@ -44,6 +44,43 @@ dataversion <- paste0("Data_", datver)
 #DATA
 
 ```{r}
+#CWC data: 
+data_og_cwc <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".csv")), show_col_types = F) %>%  
+  filter(species %in% c("live oak")) %>% 
+  select(tree, week, water_potential, cwc, time_season, time, site, date_wp) %>% 
+  mutate(water_potential = -1*water_potential) %>% 
+  distinct() %>% 
+   # filter(!tree %in% c(2012, 2011)) %>% 
+  filter(!(tree %in% c(2346))) %>% #this tree seems to have a problem with post-leafout cwc - all 0s - likely becuase the canopy was too small to see. 
+  filter(!week %in% c(11, 9)) #week 11 only has 9 midday measurements and acts really odd (2022-03-15), 9 just had 3 measurements 
+
+data_og_cwc%>% 
+  filter(time == "md") %>% 
+  group_by(week) %>% 
+  summarise(n = n())
+
+##LMA, LWA, LWC data: 
+data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
+ # filter(time %in% c("md")) %>% 
+  group_by(tree, week) %>% 
+  mutate(lma_g_cm2 = mean(lma_g_cm2, na.rm = T), 
+         water_potential = -1*water_potential) %>% 
+  filter(species %in% c("live oak")) %>% 
+  select(week, time, tree, species, lma_g_cm2, water_potential, lwc_mean, lwa_g_cm2) %>% 
+  distinct()
+
+df <- merge(data_qudo_lma, data_og_cwc %>% select(-water_potential),
+            , by = c("tree", "week", "time"), all = T) 
+df %>% ggplot(aes(y = water_potential, x = lwc_mean, color = time)) +
+geom_point()
+  # pivot_longer(names_to = "var", 
+  #              values_to = "value", 
+  #              cols = c("water_potential", "lwc_mean", "lwa_g_cm2", "lma_g_cm2")) %>% 
+  # ggplot(aes(y = value, 
+  #            ))
+```
+
+```{r, eval}
 data_og_quag_cwc <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".csv")), show_col_types = F) %>%  
   filter(species %in% c("live oak")) %>% 
   select(tree, week, water_potential, cwc, time_season, time, site, date_wp) %>% 
@@ -69,6 +106,67 @@ data_og_quag_cwc%>%
 Odd that some trees never have CWC: 
 tree 2376
 tree 2380 for week 13
+
+#Mixed effects models: Table S1
+```{r, eval = F}
+library(lme4)
+library(broom.mixed)  # For tidy output of mixed models
+library(dplyr)
+
+# Fit models with different combinations of predictors
+model_cwc <- lmer(water_potential ~ cwc + (1 | tree), data = df_filtered)
+model_lma <- lmer(water_potential ~ lma_g_cm2 + (1 | tree), data = df_filtered)
+model_time_season <- lmer(water_potential ~ time_season + (1 | tree), data = df_filtered)
+model_lwa <- lmer(water_potential ~ lwa_g_cm2 + (1 | tree), data = df_filtered)
+model_lwc <- lmer(water_potential ~ lwc_mean + (1 | tree), data = df_filtered)
+model_combined <- lmer(water_potential ~ cwc + lma_g_cm2 + time_season + (1 | tree), data = df_filtered)
+
+# New models with additional combinations
+model_lwc_time <- lmer(water_potential ~ lwc_mean + time_season + (1 | tree), data = df_filtered)
+model_lwa_time <- lmer(water_potential ~ lwa_g_cm2 + time_season + (1 | tree), data = df_filtered)
+model_lwc_lma_time <- lmer(water_potential ~ lwc_mean + lma_g_cm2 + time_season + (1 | tree), data = df_filtered)
+model_lwa_lma_time <- lmer(water_potential ~ lwa_g_cm2 + lma_g_cm2 + time_season + (1 | tree), data = df_filtered)
+
+# List of models
+models <- list(
+  cwc = model_cwc,
+  lma = model_lma,
+  time_season = model_time_season,
+  lwa = model_lwa,
+  lwc = model_lwc,
+  combined = model_combined,
+  lwc_time = model_lwc_time,
+  lwa_time = model_lwa_time,
+  lwc_lma_time = model_lwc_lma_time,
+  lwa_lma_time = model_lwa_lma_time
+)
+
+# Create a summary table of delta AIC for each model
+model_summary <- bind_rows(
+  lapply(names(models), function(model_name) {
+    model <- models[[model_name]]
+    model_aic <- AIC(model)
+    
+    # Collect model structure (excluding random effect part) and delta AIC (AIC - min AIC)
+    model_formula <- deparse(formula(model))
+    model_formula <- gsub("\\s*\\+\\s*\\(1\\s*\\|\\s*tree\\)", "", model_formula)  # Remove random effect part
+    
+    data.frame(
+      model = model_formula,
+      delta_AIC = model_aic - min(sapply(models, AIC))
+    )
+  })
+)
+
+# Arrange and print table by delta AIC
+model_summary_lives <- model_summary %>% arrange(delta_AIC) %>%
+  mutate(
+    delta_AIC = round(delta_AIC, 3)
+  )
+print(model_summary_lives)
+
+write_csv(model_summary_lives, here("processed-data", "model results", "quke_mems.csv"))
+```
 
 #--------------
 
@@ -900,6 +998,8 @@ NOTE: this includes site random effect, which the centered version does not need
 ```{r, echo=FALSE}
 space_mod_4 <- lmer(water_potential ~ cwc + (cwc|week) + (1|tree) + (1|site), data =  wc_wk_centered_df, REML = T)
 
+space_mod_4 <- lmer(water_potential ~ cwc + (cwc|week) + (1|tree), data = wc_wk_centered_df, REML = T)
+
 space_mod_df_4 <- broom.mixed::tidy(space_mod)
 #space_mod_df
 
@@ -1587,80 +1687,34 @@ write_csv(cwc_mods, here::here("processed-data", "cwc_mods.csv"))
 #----------
 #FIGURES
 
-#####Space - faceted
+####Space - SE
 
 ```{r}
-#scaled
-space_nice_2 <- data_og_quag_cwc %>% 
-  filter(time == "md", 
-         week %in% c(14, 19, 20, 37)) %>% 
-  select(tree, week, water_potential, cwc) %>% 
-  distinct() %>% 
-  drop_na(cwc, water_potential) %>% 
-  ggplot(aes(y = water_potential, 
-            x = cwc,
-             color = as.factor(week)
-             )) +
-  geom_point(alpha = .5, 
-            # aes (shape = site)
-             ) +
-  theme(legend.position="top",
-       # legend.position= c(.7, .2),
-      strip.background = element_blank(),
-      strip.text.x = element_text(size = 12),
-      plot.title = element_text(size=13),
-     # axis.title = element_text(size = 16),
-     axis.text.y = element_text(size = 12),
-     axis.text.x = element_text(size = 12),
-    # axis.text.x  = element_blank(),
-    # legend.key=element_blank(), 
-    #  axis.title.x = element_blank(),
-   #  axis.title.y = element_blank(),
-     legend.text = element_text(size = 13), 
-     legend.title = element_text(size = 16),
-     legend.margin=margin(0,0,0,0),
-      legend.box.margin=margin(-5,-8,-8,-8)
-    ) +
-  geom_smooth(method = "lm", se = F,size = .5) + 
- # geom_vline(xintercept = 0, linetype = "dotted") +
-  labs(#y= "Middays (MPa)", 
-       y = "Middays (MPa)",
-       x = "CWC (g/cm2)", 
-       color = "Week", 
-       shape = "Site") +
-  #color_many_2 +
-  color_week_assigned +
-  guides(color = guide_legend(nrow = 1)) +
-  facet_wrap(~week, nrow = 1)+
-  #scale_x_reverse() +
-scale_y_continuous(labels = scales::number_format(accuracy = 0.1))
-space_nice_2
-
-```
-
-#Slopes: 
-
-####***Space
-
-```{r}
-space_slope <- final_df_space_se %>% 
-    mutate(week = case_when(
-        week %in% c(9) ~ "2022-02-28",
+space_slope_df <- final_df_space_se %>%  
+  mutate(week = case_when(
         week %in% c(10) ~ "2022-03-08",
         week %in% c(10) ~  "2022-03-15", 
         week %in% c(12) ~  "2022-03-25",
         week %in% c(14) ~  "2022-04-04",
         week %in% c(15) ~  "2022-04-11",
         week %in% c(17) ~  "2022-04-25", 
-        week %in% c(18) ~  "2022-05-03", 
+        week %in% c(18) ~ "2022-05-04",
         week %in% c(19) ~  "2022-05-09",
         week %in% c(21) ~  "2022-05-23",
         week %in% c(29) ~  "2022-07-19",
         week %in% c(33) ~  "2022-08-18",
         week %in% c(37) ~  "2022-09-15")) %>% 
-  mutate(week = format(as.Date(week), "%m-%d")) %>%
+  mutate(week = format(as.Date(week), "%m-%d")) %>% 
+  mutate(week = as.factor(week))
+
+unique(space_slope_df$week)
+```
+
+
+```{r}
+space_slope <- space_slope_df %>% 
  # filter(week %in% c(14, 17, 21, 29)) %>% 
- # filter(term == "cwc") %>% 
+ # filter(term == "lwc_mean") %>% 
   mutate(upr = slope + 1.96*(std.error.slope), 
          lwr = slope - 1.96*(std.error.slope)) %>% 
  ggplot(aes(color= as.factor(week))
@@ -1671,7 +1725,7 @@ space_slope <- final_df_space_se %>%
   #         alpha = .01, 
   #         color = NA) +
   # geom_hline(aes(yintercept = 880.5797), color = "#525252") +
-  geom_point(aes(y = slope ,x = week), size =2) +
+  geom_point(aes(y = slope ,x = week), size =3) +
     geom_point(aes(y = upr, x = week), size = 1) +
   geom_point(aes(y = lwr, x = week), size = 1) +
   #geom_line(aes(group = week, y = week, x = upr)) +
@@ -1699,12 +1753,8 @@ space_slope <- final_df_space_se %>%
     plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt"),
      axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=.25)
     ) +
-  #scale_x_continuous(breaks = c(10, 12, 14,15, 17, 19, 21, 29, 33, 37)
-                  #   breaks = c(37, 33, 29, 21, 19, 17, 15, 14, 12, 10)
-                      # seq(10, 30, by = 1)
-  #                   ) +
   geom_hline(yintercept = 0, linetype="dotted") + 
-  scale_color_manual(values = c("02-28" ="#122241",
+  scale_color_manual(values = c("9" ="#122241",
                                                      "03-08" = "#48578E", #week 10
                                                     "03-15" = "#48578E", #10
                                                     # "11" = "#122451", 
@@ -1719,7 +1769,7 @@ space_slope <- final_df_space_se %>%
                                                     # "16" = "#8E9D68", 
                                                      "04-27" = "#8E9D30", #17
                                                      "04-25" = "#8E9D30", #17
-                                                     "05-03" = "#D7B110",
+                                                       "05-04" = "#D7B110", #18
                                                      "05-09" = "#D9C000", #19
                                                     # "20" = "#F8A63A" ,
                                                     # "21" = "#F8A63A" ,
@@ -1733,10 +1783,102 @@ space_slope <- final_df_space_se %>%
                                                    #  "37" = "#b33b72",
                                                    #  "39" = "#893843"
                                                     )) +
- # color_many_2 +
+  #scale_x_continuous(breaks = c(10, 12, 14,15, 17, 19, 21, 29, 33, 37)
+                  #   breaks = c(37, 33, 29, 21, 19, 17, 15, 14, 12, 10)
+                      # seq(10, 30, by = 1)
+  #                   ) +
+  geom_hline(yintercept = 0, linetype="dotted") + 
   guides(color = guide_legend(nrow = 2)) #+
 space_slope
 ```
+
+####Space - BS
+
+```{r}
+space_slope <-  final_df_all_cwc %>% 
+   filter(!week %in% c(9)) %>% 
+  filter(analysis == "space") %>% 
+ # mutate(week = as.numeric(week)) %>% 
+   ggplot(aes(color= as.factor(week))
+    ) + 
+  geom_point(aes(y = slope ,x = as.factor(week)), size =2) +
+    geom_point(aes(y = upr, x = as.factor(week)), size = 1) +
+  geom_point(aes(y = lwr, x = as.factor(week)), size = 1) +
+  #geom_line(aes(group = week, y = week, x = upr)) +
+  geom_segment(aes(y= lwr, 
+                   yend = upr, 
+                   x = as.factor(week), 
+                   xend = as.factor(week), 
+                   color = as.factor(week)))+
+  labs(x = "Week", 
+       color = "Week", 
+       y = " ") +
+  theme(legend.position="none",
+       # legend.position= c(.7, .2),
+      strip.background = element_blank(),
+      strip.text.x = element_text(size = 12),
+      plot.title = element_text(size=13),
+     # axis.title = element_text(size = 16),
+     axis.text.y = element_text(size = 12),
+     axis.text.x = element_text(size = 12),
+    # axis.text.x  = element_blank(),
+     legend.key=element_blank(), 
+      axis.title.x = element_blank(),
+     axis.title.y = element_blank(),
+     legend.text = element_text(size = 13), 
+     legend.title = element_text(size = 16),
+     legend.margin=margin(0,0,0,0),
+      legend.box.margin=margin(-5,-8,-8,-8),
+    plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt")
+    ) +
+  #scale_x_continuous(breaks = c(10, 12, 14,15, 17, 19, 21, 29, 33, 37)
+                  #   breaks = c(37, 33, 29, 21, 19, 17, 15, 14, 12, 10)
+                      # seq(10, 30, by = 1)
+  #                   ) +
+  geom_hline(yintercept = 0, linetype="dotted") + 
+  color_week_assigned +
+ # color_many_2 +
+  guides(color = guide_legend(nrow = 2)) + 
+  scale_color_manual(values = c("9" ="#122241",
+                                                     "03-08" = "#48578E", #week 10
+                                                    "03-15" = "#48578E", #10
+                                                    # "11" = "#122451", 
+                                                     "03-23" = "#165E6F", #12
+                                                     "03-25" = "#165E6F", #12
+                                                     "03-30" = "#B6D0E2", #14
+                                                     "04-04" = "#B6D0E2", #14
+                                                     "04-06" = "#B6D0E2", #14
+                                                     #"13" = "#B6D0E2", 
+                                                     "04-13" = "#729684", 
+                                                     "04-11" = "#729684", 
+                                                    # "16" = "#8E9D68", 
+                                                     "04-27" = "#8E9D30", #17
+                                                     "04-25" = "#8E9D30", #17
+                                                       "05-04" = "#D7B110", #18
+                                                     "05-09" = "#D9C000", #19
+                                                    # "20" = "#F8A63A" ,
+                                                    # "21" = "#F8A63A" ,
+                                                     "05-23" = "#EC7E28", #21
+                                                     "07-19" = "#CC5210", #29
+                                                     "08-18"= "#E97B6E", #33
+                                                    # "37" = "#b33b72",
+                                                     "09-15" = "#CC5265" #37
+                                                     #"39" = "#862d46" 
+                                                    # "39" = "#C969A1"
+                                                   #  "37" = "#b33b72",
+                                                   #  "39" = "#893843"
+                                                    )) +
+  #scale_x_continuous(breaks = c(10, 12, 14,15, 17, 19, 21, 29, 33, 37)
+                  #   breaks = c(37, 33, 29, 21, 19, 17, 15, 14, 12, 10)
+                      # seq(10, 30, by = 1)
+  #                   ) +
+  geom_hline(yintercept = 0, linetype="dotted") + 
+  guides(color = guide_legend(nrow = 2))
+ # scale_x_reverse()
+space_slope
+
+```
+
 
 ####Time
 
@@ -1912,7 +2054,7 @@ legend_plot <- data_og_cwc  %>%
   add_row(date_wp = as.Date("2022-02-28"), time = "md", cwc = .05, water_potential = -.3, site = "Chamise") %>% 
   add_row(date_wp = as.Date("2022-02-28"), time = "pd", cwc = .05, water_potential = -.3, site = "Chamise") %>% 
   filter(date_wp %in% c(
-         "2022-02-28",
+         #"2022-02-28",
          "2022-03-08",
          "2022-03-15",
          "2022-03-25",

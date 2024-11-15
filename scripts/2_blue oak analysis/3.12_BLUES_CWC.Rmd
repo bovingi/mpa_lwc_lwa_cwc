@@ -70,9 +70,108 @@ data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".cs
   distinct()
 ```
 
+```{r}
+df <- merge(data_qudo_lma, data_og_cwc %>% select(-water_potential),
+            , by = c("tree", "week", "time"), all = T) 
+df %>% ggplot(aes(y = water_potential, x = lwc_mean, color = time)) +
+geom_point()
+  # pivot_longer(names_to = "var", 
+  #              values_to = "value", 
+  #              cols = c("water_potential", "lwc_mean", "lwa_g_cm2", "lma_g_cm2")) %>% 
+  # ggplot(aes(y = value, 
+  #            ))
 
 
+```
 
+
+#--------------
+
+#Mixed effects models: Table S1
+```{r}
+library(lme4)
+library(broom.mixed)  # For tidy output of mixed models
+library(dplyr)
+# Filter the data to exclude rows with missing values in the variables of interest
+df_filtered <- df %>% 
+  filter(!is.na(cwc) & !is.na(lma_g_cm2) & !is.na(water_potential))
+
+
+# Fit models with different combinations of predictors
+model_cwc <- lmer(water_potential ~ cwc + (1 | tree), data = df_filtered)
+model_lma <- lmer(water_potential ~ lma_g_cm2 + (1 | tree), data = df_filtered)
+model_time_season <- lmer(water_potential ~ time_season + (1 | tree), data = df_filtered)
+model_lwa <- lmer(water_potential ~ lwa_g_cm2 + (1 | tree), data = df_filtered)
+model_lwc <- lmer(water_potential ~ lwc_mean + (1 | tree), data = df_filtered)
+model_combined <- lmer(water_potential ~ cwc + lma_g_cm2 + time_season + (1 | tree), data = df_filtered)
+
+# New models with additional combinations
+model_lwc_time <- lmer(water_potential ~ lwc_mean + time_season + (1 | tree), data = df_filtered)
+model_lwa_time <- lmer(water_potential ~ lwa_g_cm2 + time_season + (1 | tree), data = df_filtered)
+model_lwc_lma_time <- lmer(water_potential ~ lwc_mean + lma_g_cm2 + time_season + (1 | tree), data = df_filtered)
+model_lwa_lma_time <- lmer(water_potential ~ lwa_g_cm2 + lma_g_cm2 + time_season + (1 | tree), data = df_filtered)
+
+# List of models
+models <- list(
+  cwc = model_cwc,
+  lma = model_lma,
+  time_season = model_time_season,
+  lwa = model_lwa,
+  lwc = model_lwc,
+  combined = model_combined,
+  lwc_time = model_lwc_time,
+  lwa_time = model_lwa_time,
+  lwc_lma_time = model_lwc_lma_time,
+  lwa_lma_time = model_lwa_lma_time
+)
+
+# Create a summary table of delta AIC for each model
+model_summary <- bind_rows(
+  lapply(names(models), function(model_name) {
+    model <- models[[model_name]]
+    model_aic <- AIC(model)
+    
+    # Collect model structure (excluding random effect part) and delta AIC (AIC - min AIC)
+    model_formula <- deparse(formula(model))
+    model_formula <- gsub("\\s*\\+\\s*\\(1\\s*\\|\\s*tree\\)", "", model_formula)  # Remove random effect part
+    
+    data.frame(
+      model = model_formula,
+      delta_AIC = model_aic - min(sapply(models, AIC))
+    )
+  })
+)
+
+# Arrange and print table by delta AIC
+model_summary <- model_summary %>% arrange(delta_AIC) %>%
+  mutate(
+    delta_AIC = round(delta_AIC, 3)
+  )
+print(model_summary)
+
+write_csv(model_summary, here("processed-data", "model results", "qudo_mems.csv"))
+```
+
+
+What random intercept structure is better?
+
+```{r}
+# Load necessary library
+library(lme4)
+
+# Fit the random intercept model
+model_intercept <- lmer(water_potential ~ cwc + time_season + (1 | tree), data = df_filtered, REML = TRUE)
+
+# Fit the random slope model, allowing slopes for `cwc` to vary by tree
+model_slope <- lmer(water_potential ~ cwc + time_season + (1 + cwc | tree), data = df_filtered, REML = TRUE)
+
+# Compare the models using AIC, BIC, and likelihood ratio test
+summary(model_intercept)
+summary(model_slope)
+
+anova(model_intercept, model_slope)  # Likelihood ratio test for nested models
+
+```
 
 #--------------
 

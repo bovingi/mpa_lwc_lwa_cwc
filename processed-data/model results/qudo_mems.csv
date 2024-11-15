@@ -1,0 +1,12 @@
+model,delta_AIC
+water_potential ~ lwa_g_cm2 + lma_g_cm2 + time_season + (1 | ,0
+    tree),0
+water_potential ~ lwa_g_cm2 + time_season,9.814
+water_potential ~ lwa_g_cm2,15.495
+water_potential ~ lwc_mean + lma_g_cm2 + time_season,43.365
+water_potential ~ lwc_mean,60.407
+water_potential ~ lwc_mean + time_season,60.79
+water_potential ~ cwc + lma_g_cm2 + time_season,88.684
+water_potential ~ cwc,108.577
+water_potential ~ time_season,111.066
+water_potential ~ lma_g_cm2,143.664
