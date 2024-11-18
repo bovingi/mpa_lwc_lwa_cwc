@@ -37,6 +37,10 @@ data_qudo_raw <- read_csv(here::here("processed-data", paste0("analysis",datver,
     week > 17 ~ "after leafout", 
     TRUE ~ as.character("none")
   )) %>% 
+    mutate(week = case_when(
+    date_wp %in% c("2022-03-15") ~ 11, 
+    TRUE ~ as.numeric(week)
+  )) %>% 
   select(-plot) %>% 
   distinct() %>% 
   filter(!(week == 19 & time == "pd" & water_potential < -2))
@@ -47,7 +51,7 @@ wc_qudo_df <- data_qudo_raw %>%
   
 #take a look at the counts for each week: 
 wc_qudo_df %>% 
-  group_by(week, time) %>% 
+  group_by(week, date_wp,time) %>% 
   summarise(n = n())
 ```
 

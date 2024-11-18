@@ -137,8 +137,25 @@ timeline_df <- wc_qudo_df %>%
     TRUE ~ as.character(date_wp)
   )) %>% 
   mutate(date_new = ymd(date_new)) %>% 
-  select(date_new, week, water_potential, time) %>% 
-  distinct()
+  select(date_new, week, water_potential, time,date_wp) %>% 
+  distinct() %>%
+#Dates below are so that the colors line up with the cwc outlines on the timeline; comment them out if we want to have the actual MPa dates (so that the points are offset from the outlines)
+  mutate(date_new = case_when(
+   # date_wp %in% c("2022-03-15") ~ "2022-03-08",#CWC also measured on March 15th, keep
+    date_wp %in% c("2022-03-15") ~ "2022-03-16", #overflight on 3/16
+    date_wp %in% c("2022-03-23", "2022-03-25") ~ "2022-03-22", #ok to combine these, CWC only measured on March 222, some MPas on March 23
+    date_wp %in% c("2022-03-30","2022-04-06","2022-04-04") ~ "2022-04-05", #CWC also measured on April 06, just use 04-04
+    date_wp %in% c("2022-04-13", "2022-04-11") ~ "2022-04-12", #CWC also measred on April 11, just keep 
+    date_wp %in% c("2022-04-20") ~ "2022-04-20", #
+    date_wp %in% c("2022-04-27", "2022-04-25") ~ "2022-04-29", #
+    date_wp %in% c("2022-05-04") ~ "2022-05-03",
+    date_wp %in% c("2022-05-09") ~ "2022-05-11",
+    date_wp %in% c("2022-05-09") ~ "2022-05-17", #might not have MPas?
+    date_wp %in% c("2022-05-23", "2022-05-25") ~ "2022-05-29",
+    TRUE ~ as.character(date_wp)
+  )) %>% 
+  mutate(date_new = ymd(date_new))
+
 
 #For CWC
 data_og_cwc1 <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".csv")), show_col_types = F) %>%  
@@ -165,7 +182,8 @@ data_og_cwc <- data_og_cwc1 %>% #this tree seems to have a problem with post-lea
     date_wp %in% c("2022-05-09") ~ "2022-05-17", #might not have MPas?
     date_wp %in% c("2022-05-23", "2022-05-25") ~ "2022-05-29",
     TRUE ~ as.character(date_wp)
-  ))
+  )) %>% 
+  add_row(date_new = "2022-05-17", cwc = 1)
 ```
 
 

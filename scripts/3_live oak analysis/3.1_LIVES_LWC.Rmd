@@ -35,6 +35,10 @@ data_quag_raw <- read_csv(here::here("processed-data", paste0("analysis_bothspp"
     week > 17 ~ "after leafout", 
     TRUE ~ as.character("none")
   )) %>% 
+  mutate(week = case_when(
+    date_wp %in% c("2022-03-15") ~ 11, 
+    TRUE ~ as.numeric(week)
+  )) %>% 
   select(-plot) %>% 
   distinct() %>% 
   filter(lwc_mean < 2) %>% 
@@ -47,6 +51,10 @@ data_og_quag_lwc_mean <- data_quag_raw %>%
 data_og_quag_lwc_mean  %>% 
   filter(time == "md") %>% 
   group_by(week, time) %>% 
+  summarise(n = n())
+
+data_quag_raw  %>% 
+  group_by(week, time, date_wp) %>% 
   summarise(n = n())
 ```
 look at it: 

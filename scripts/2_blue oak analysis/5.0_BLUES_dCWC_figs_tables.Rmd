@@ -160,7 +160,16 @@ dcwc_plot <- filtered_data %>%
   geom_smooth(method = "lm", se = F,size = .5) +
   color_very_many +
   labs(y = "CWC (g/cm2)", 
-       x = "Date")
+       x = "Date")  +
+scale_x_date(date_labels = '%b. %d', 
+             breaks = as.Date(filtered_data$date_wp)) + 
+  theme(legend.position = "none", 
+        axis.title.y = element_blank(), 
+        axis.title.x = element_blank(), 
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(), 
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=.5, size= 20)
+        ) 
 
 dcwc_plot 
 ```
