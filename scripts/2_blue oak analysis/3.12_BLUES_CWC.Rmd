@@ -47,7 +47,7 @@ dataversion <- paste0("Data_", datver)
 #CWC data: 
 data_og_cwc <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".csv")), show_col_types = F) %>%  
   filter(species %in% c("blue oak")) %>% 
-  select(tree, week, water_potential, cwc, time_season, time, site, date_wp) %>% 
+  select(tree, week, water_potential, cwc, time_season, time, site, date_wp, date_shift) %>% 
   mutate(water_potential = -1*water_potential) %>% 
   distinct() %>% 
    # filter(!tree %in% c(2012, 2011)) %>% 
@@ -56,7 +56,7 @@ data_og_cwc <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".cs
 
 data_og_cwc%>% 
   filter(time == "md") %>% 
-  group_by(week) %>% 
+  group_by(week, date_shift) %>% 
   summarise(n = n())
 
 ##LMA, LWA, LWC data: 

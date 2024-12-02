@@ -369,6 +369,8 @@ space_slope
 ```
 
 ```{r, eval = F}
+data <- data_lwa_cwc %>% 
+  drop_na(cwc, lwa_g_cm2)
 # Define the number of bootstrap iterations
 n_iterations <- 1000
 
@@ -950,7 +952,7 @@ combined_plots_all_legend <- grid.arrange(arrangeGrob(combined_plots_all,
                                 widths = c(1, .02)))
 combined_plots_all_legend
 
-ggsave(here("figures", "quke figures", "CWC", "combined_plots_lwa_quke"), combined_plots_all_legend, device = "jpg", width = 10, height = 7, dpi = 300)
+ggsave(here("figures", "quag figures", "CWC", "combined_plots_lwa_quag"), combined_plots_all_legend, device = "jpg", width = 10, height = 7, dpi = 300)
 ```
 
 #------

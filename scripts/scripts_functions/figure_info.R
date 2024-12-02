@@ -24,7 +24,7 @@ Cross = list(c("#c969a1", "#ce4441", "#ee8577", "#eb7926", "#ffbb44", "#859b6c",
 Cross_rev = c("#122451", "#063E5C", "#165E6F", "#528791", "#729684", "#8E9D68", "#D9B150", "#F8A63A" ,"#EC7E28", "#EC7F51", "#E97B6E", "#D5534D", "#CC5265", "#C969A1")
 
 #My colors: 
-color_many_2 <- scale_color_manual(values = c("#122451", "#165E6F", "#528791", "#729684", "#8E9D68", "#D9B150", "#F8A63A" ,"#EC7E28", "#E97B6E", "#CC5265", "#C969A1"))
+color_many_2 <- scale_color_manual(values = c("#122451", "#165E6F", "#528791", "#729684", "#8E9D68", "#D9B150", "#F8A63A" ,"#EC7E28", "#E97B6E", "#CC5265", "#C969A1", "#862d46"))
 
 color_week_assigned <- scale_color_manual(values = c("9" ="#122241",
                                                      "10" ="#122241",

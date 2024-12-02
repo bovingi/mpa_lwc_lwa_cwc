@@ -56,7 +56,7 @@ data_og_cwc1 <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".c
   filter(!(tree %in% c(2346))) 
 
 data_og_cwc <- data_og_cwc1 %>% #this tree seems to have a problem with post-leafout cwc - all 0s - likely becuase the canopy was too small to see. 
-  filter(time == "md") %>% 
+ # filter(time == "md") %>% 
   filter(!week %in% c(9)) %>%  #week 11 only has 9 midday measurements and acts really odd (2022-03-15), 9 just had 3 measurements
   # select(tree, week, date_wp, cwc, time_season)  %>% 
   # mutate(date_new = case_when(
@@ -69,6 +69,7 @@ data_og_cwc <- data_og_cwc1 %>% #this tree seems to have a problem with post-lea
   #   date_wp %in% c("2022-05-23") ~ "2022-05-25",
   #   TRUE ~ as.character(date_wp)
   # )) %>% 
+#these are the actual dates measured for CWC: 
   mutate(date_new = case_when(
    # date_wp %in% c("2022-03-15") ~ "2022-03-08",#CWC also measured on March 15th, keep
     date_wp %in% c("2022-03-15") ~ "2022-03-16", #overflight on 3/16
@@ -83,7 +84,11 @@ data_og_cwc <- data_og_cwc1 %>% #this tree seems to have a problem with post-lea
     date_wp %in% c("2022-05-23", "2022-05-25") ~ "2022-05-29",
     TRUE ~ as.character(date_wp)
   )) %>% 
-  mutate(date_wp = ymd(date_new)) #make sure the new dates get included in the right way
+  select(-time, -date_wp, -water_potential) %>% 
+  group_by(tree) %>% 
+  fill(c("site"), .direction = "downup") %>% 
+  mutate(date_wp = ymd(date_new)) %>% 
+  distinct()#make sure the new dates get included in the right way
 
 # Filter for trees measured "before leafout"
 before_leafout_data <- data_og_cwc  %>%
@@ -121,10 +126,10 @@ filtered_data <- data_og_cwc[data_og_cwc$tree %in% common_trees, ]
 dcwc_plot <- filtered_data %>% 
   #filter(week %in% c(29:40)) %>% 
   drop_na(cwc) %>% 
-  group_by(tree) %>% 
-  mutate(COUNT = n()) %>% 
-  filter(!(COUNT == 1)) %>% #We want the tree to have been measured at least 2X
-  select(-COUNT)  %>%
+#  group_by(tree) %>% 
+ # mutate(COUNT = n()) %>% 
+ # filter(!(COUNT == 1)) %>% #We want the tree to have been measured at least 2X
+#  select(-COUNT)  %>%
   group_by(tree) %>%
 #filter out trees that werent measured in Sept. 
   filter(
@@ -160,7 +165,17 @@ dcwc_plot <- filtered_data %>%
   geom_smooth(method = "lm", se = F,size = .5) +
   color_very_many +
   labs(y = "CWC (g/cm2)", 
-       x = "Date")
+       x = "Date")  +
+scale_x_date(date_labels = '%b. %d', 
+             breaks = as.Date(data_og_cwc$date_wp)) + 
+  theme(legend.position = "none", 
+        axis.title.y = element_blank(), 
+        axis.title.x = element_blank(), 
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(), 
+        axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=.5, size= 20)
+        ) 
+
 
 dcwc_plot 
 ```
@@ -659,7 +674,7 @@ print(dcwc_df_no_outliers)
 
 dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_quag_wholedaterange_df_no_outliers.csv"))
 ```
-#TABLE: 
+#COMBINE:
 
 Need dCWC, MPa, LWmass, LWarea, LMA
 
@@ -724,7 +739,7 @@ data_quag_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".cs
 
 
 ```{r}
-dcwc_alldata <- merge(dcwc_wholedaterange1, data_quag_lma, by = c("tree", "week","time", "water_potential", "date_wp"), all = T) %>% 
+dcwc_alldata <- merge(dcwc_wholedaterange1, data_quag_lma, by = c("tree", "week", "date_wp", "date_new"), all = T) %>% 
   distinct() %>%
   group_by(tree) %>% 
   fill(c(slope), .direction = "downup") %>% 
@@ -732,8 +747,7 @@ dcwc_alldata <- merge(dcwc_wholedaterange1, data_quag_lma, by = c("tree", "week"
   group_by(week) %>% 
   fill(c("date_wp"), .direction = "downup") 
 
-dcwc_beforeleafout<- merge(dcwc_beforeleafout1 , data_quag_lma, by = c("tree", "week","time", "water_potential", "date_wp"), all = T) %>% 
-  distinct() %>% 
+dcwc_beforeleafout<- merge(dcwc_beforeleafout1 , data_quag_lma, by = c("tree", "week","date_wp", "date_new"), all = T) %>% 
   distinct() %>%
   group_by(tree) %>% 
   fill(c(slope), .direction = "downup") %>% 
@@ -742,8 +756,7 @@ dcwc_beforeleafout<- merge(dcwc_beforeleafout1 , data_quag_lma, by = c("tree", "
   fill(c("date_wp"), .direction = "downup") 
   
 
-dcwc_afterleafout<- merge(dcwc_afterleafout1, data_quag_lma, by = c("tree", "week","time", "water_potential", "date_wp"), all = T) %>% 
-  distinct() %>% 
+dcwc_afterleafout<- merge(dcwc_afterleafout1, data_quag_lma, by = c("tree", "week", "date_wp", "date_new"), all = T) %>% 
   distinct() %>%
   group_by(tree) %>% 
   fill(c(slope), .direction = "downup") %>% 
@@ -751,8 +764,7 @@ dcwc_afterleafout<- merge(dcwc_afterleafout1, data_quag_lma, by = c("tree", "wee
   group_by(week) %>% 
   fill(c("date_wp"), .direction = "downup") 
 
-dcwc_justmay <-  merge(dcwc_justmay1, data_quag_lma, by = c("tree", "week", "time", "water_potential", "date_wp"), all = T) %>% 
-  distinct() %>% 
+dcwc_justmay <-  merge(dcwc_justmay1, data_quag_lma, by = c("tree", "week", "date_wp", "date_new"), all = T) %>% 
   distinct() %>%
   group_by(tree) %>% 
   fill(c(slope), .direction = "downup") %>% 
@@ -765,7 +777,20 @@ dcwc_allanalyses <- bind_rows(dcwc_afterleafout, dcwc_beforeleafout, dcwc_alldat
  # filter(date_wp %in% c("2022-03-08")) %>% 
   distinct() %>% 
   group_by(week) %>% 
-  fill(c("date_wp"), .direction = "downup") 
+  fill(c("date_wp"), .direction = "downup") %>% 
+  group_by(tree) %>% 
+  fill(c("site", "species"), .direction = "downup") %>% 
+  ungroup() %>% 
+  #mutate(slope =  as.character(slope)) %>% 
+  group_by(tree, slope) %>% 
+  fill(c("analysis"), .direction = "downup") %>% 
+  mutate(slope =  as.numeric(slope)) %>% 
+  select(-time_season) %>% 
+  ungroup() %>% 
+  group_by(tree, week) %>% 
+  fill(c("cwc"), .direction = "downup") %>% 
+  select(-date_wp)
+  
 #Only want dates that we have good quag data for:
   # filter(date_wp %in% c("2022-03-08",
   #                       "2022-04-04",
@@ -779,22 +804,24 @@ dcwc_allanalyses <- bind_rows(dcwc_afterleafout, dcwc_beforeleafout, dcwc_alldat
 #Potential combinations: 
 dcwc_allanalyses %>% 
   drop_na(slope, water_potential) %>% 
-  group_by(week, time, date_wp) %>% 
+  group_by(week, time) %>% 
   count() 
 
 #Potential combinations: 
 df <- dcwc_allanalyses %>% 
   drop_na(slope, water_potential) %>% 
-  select(date_wp, time) %>% 
+  select(time, analysis) %>% 
   distinct() %>% 
-  #group_by(date_wp, time, analysis) %>% 
+  group_by(analysis) %>% 
   count() 
 df
 
 
 ```
 
-#2. TABLE: Test for significance
+
+
+#2. TABLE: Test for significance, no Bonferoonis
 ```{r}
 library(dplyr)
 library(tidyr)
@@ -855,6 +882,9 @@ for (analysis_name in names(data_list)) {
   }
 }
 
+sig_mods_all <- as.data.frame(sig_mods_all %>% 
+    filter(!(variable == "lma_g_cm2" & date_wp %in% c("2022-04-12"))))
+
 # Finalize sig_mods_all as a single data frame
 sig_mods_all_sig <- as.data.frame(sig_mods_all) %>% 
   janitor::clean_names() %>% 
@@ -873,7 +903,7 @@ sig_mods_all_sig %>% group_by(analysis, variable) %>% count()
 sig_mods_all_sig 
 
 ```
-#2.5. FIGURES: All dCWC relationships visualized:
+#2.25. FIGURES: All dCWC relationships visualized:
 ```{r}
 fig_data <- merge(dcwc_alldata %>% select(-analysis), sig_mods_all_sig, by = c("date_wp", "time"), all.y = T) %>% 
   mutate(r_squared = round(r_squared, 3)) %>% 
@@ -892,15 +922,14 @@ dcwc_alldata %>%
   group_by(week, date_wp, time) %>% 
   count()
 
-
 # Step 1: Create variable_new column based on specified conditions
 df <- sig_mods_all %>%
   filter(!is.na(time)) %>% 
-  mutate(variable_new = ifelse(variable == "water_potential", paste(variable, time, sep = "_"), variable)) %>%
-  select(date_wp, slope_estimate, analysis, p_value, variable_new) %>% 
+  unite("variable_new", c(variable,time), remove = F) %>% 
+  select(date_wp, slope_estimate, analysis, p_value, variable_new, time) %>% 
   distinct() %>% 
   filter(!(variable_new %in% c("water_potential_md") & slope_estimate < -0.005)) %>% 
-  filter(!(variable_new %in% c("lwc_mean") & slope_estimate < -0.3)) %>% 
+ # filter(!(variable_new %in% c("lwc_mean") & slope_estimate < -0.3)) %>% 
 #  filter(slope_estimate < 10) %>% 
   # filter(!(date_wp %in% c("2022-03-23",
   #                         "2022-03-30",
@@ -911,27 +940,624 @@ df <- sig_mods_all %>%
   #                       # "2022-08-18",
   #                       # "2022-09-15"
   #                       ))) %>%
-  filter(!(analysis == "dcwc_beforeleafout"))
+  filter(!(analysis == "dcwc_beforeleafout")) %>% 
+  mutate(variable_new = case_when(variable_new %in% c("lma_g_cm2_NA") ~ "LMA (g/cm2)", 
+         TRUE ~ as.character(variable_new))) %>% 
+  filter(!(variable_new == "MA (g/cm2)"))
 
 # Step 2: Plotting
 ggplot(df, aes(x = date_wp, y = slope_estimate, color = analysis)) +
-  geom_hline(yintercept = 0) +
-  # ggbeeswarm::geom_beeswarm(aes(size = ifelse(p_value < 0.05, 3, 1)), 
-  #             position = position_jitter(width = 1, height = 0)) +
-   geom_jitter(aes(size = ifelse(p_value < 0.05, 3, 1)), 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray") +
+  geom_vline(xintercept = unique(df$date_wp), color = "gray90", linetype = "dotted") +
+  geom_jitter(aes(size = ifelse(p_value < 0.05, 3, 1)), 
               position = position_jitter(width = 3, height = 0)) +
-  facet_wrap(~ variable_new, scales = "free", labeller = label_wrap_gen(multi_line = TRUE)) +
-  labs(x = "Date", y = "Slope", color = "Analysis") +
-  scale_size_identity() +  # Ensures that the size mapping from `ifelse` is used directly
-  theme(
-    strip.text = element_text(size = 10),
-    legend.position = "bottom"
+  facet_wrap(~ variable_new, 
+    scales = "free", 
+       nrow = 4,
+    labeller = labeller(
+     .multi_line = T),
+   # labeller = label_wrap_gen(multi_line = F),
   ) +
-  scale_x_date(date_labels="%d %b %Y", breaks = unique(df$date_wp)) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=.5)) +
-  scale_color_manual(values = c("#c969a1", "#ffbb44","#122451"))
+  labs(x = "Date", 
+       y = "Slope", 
+       color = "Analysis") +
+  scale_size_identity() +  # Ensures that the size mapping from `ifelse` is used directly
+ # theme_minimal(base_size = 12) + 
+  scale_x_date(date_labels = "%d %b %Y", breaks = unique(df$date_wp)) +
+  scale_color_manual(values = c("#c969a1", "#ffbb44", "#122451")) + 
+  labs(x = "")+
+  theme(
+    strip.text = element_text(size = 10, face = "bold"),
+   # axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0.5),
+    axis.title.x = element_text(), 
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom",
+    strip.background = element_rect(fill = "white", color = "black"),
+    panel.spacing = unit(1, "lines"),
+    axis.text.x = element_blank(), # Hide x-axis text for all panels
+    axis.ticks.x = element_blank(), # Hide x-axis ticks for all panels
+    strip.text.x = element_text(face = "bold"),
+    axis.text.x.bottom = element_text(angle = 90, vjust = 0.5, hjust = 0.5) # Show x-axis text only at the bottom
+    #axis.ticks.x.bottom = element_line() # Show x-axis ticks only at the bottom
+  )
 ```
-#3. FIGURES: dCWC and the best dates: 
+
+
+#2.5. TABLE: Test for significance, Bonferonni
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(janitor)
+library(readr)
+
+# Function to fit the model safely
+fit_model <- function(data, variable) {
+  tryCatch(
+    lm(slope ~ get(variable), data = data),
+    error = function(e) NULL
+  )
+}
+
+# Function to extract model results and apply Bonferroni correction
+extract_model_results <- function(model, num_tests) {
+  if (is.null(model)) return(c(R_squared = NA, p_value = NA, slope_estimate = NA))
+  summary_model <- summary(model)
+  coefficients <- summary_model$coefficients
+  if (nrow(coefficients) < 2) return(c(R_squared = NA, p_value = NA, slope_estimate = NA))
+  
+  # Raw p-value from the model
+  p_value_raw <- coefficients[2, 4]  # Extract raw p-value for the slope
+  
+  # Bonferroni correction: multiply the raw p-value by the number of tests
+  p_value_corrected <- p_value_raw * num_tests
+  
+  # Ensure corrected p-value does not exceed 1
+  c(
+    R_squared = summary_model$r.squared,
+    p_value = min(p_value_corrected, 1),  # Bonferroni-corrected p-value
+    slope_estimate = coefficients[2, 1]  # Extract slope estimate
+  )
+}
+
+# Define the datasets and variables of interest
+data_list <- list(
+  dcwc_alldata = dcwc_alldata,
+  dcwc_beforeleafout = dcwc_beforeleafout,
+  dcwc_afterleafout = dcwc_afterleafout,
+  dcwc_justmay = dcwc_justmay
+)
+
+variables <- c("water_potential", "lwa_g_cm2", "lwc_mean", "lma_g_cm2")
+
+# Initialize an empty data frame to store results for each analysis and variable
+sig_mods_all <- data.frame()
+
+# Loop through each dataset and variable
+for (analysis_name in names(data_list)) {
+  analysis_data <- data_list[[analysis_name]]
+  
+  for (variable in variables) {
+    
+    # Set grouping based on the variable
+    grouping_vars <- if (variable == "lma_g_cm2") c("date_wp") else c("date_wp", "time")
+    
+    # Count the number of groups for Bonferroni correction
+    num_tests <- analysis_data %>%
+      group_by(across(all_of(grouping_vars))) %>%
+      filter(n() > 1) %>%
+      summarise() %>%  # Summarize to count distinct groups
+      nrow()           # Number of groups = number of tests for Bonferroni correction
+    
+    # Run the model on each group and store results
+    results <- analysis_data %>%
+      group_by(across(all_of(grouping_vars))) %>%
+      filter(n() > 1) %>%  # Ensure enough data points to fit a model
+      nest() %>%           # Nest the data for each group
+      mutate(
+        # Fit the model and extract results with Bonferroni correction
+        model_results = map(data, ~ extract_model_results(fit_model(.x, variable), num_tests)),
+        R_squared = map_dbl(model_results, "R_squared"),
+        p_value = map_dbl(model_results, "p_value"),  # Bonferroni-corrected p-value
+        slope_estimate = map_dbl(model_results, "slope_estimate"),
+        analysis = analysis_name,
+        variable = variable
+      ) %>%
+      select(analysis, variable, everything(), -data, -model_results) %>%  # Exclude intermediate columns
+      ungroup()
+    
+    # Add results to sig_mods_all
+    sig_mods_all <- bind_rows(sig_mods_all, results)
+  }
+}
+
+sig_mods_all <- sig_mods_all %>% 
+    filter(!(variable == "lma_g_cm2" & date_wp %in% c("2022-04-12"))) 
+# Finalize sig_mods_all as a single data frame
+sig_mods_all_sig <- sig_mods_all %>%
+  clean_names() %>%
+  filter(p_value < 0.05) %>%  # Filter significant results (after Bonferroni correction)
+  filter(!(analysis == "dcwc_beforeleafout"))  # Exclude specific analysis %>% 
+
+
+# Write results to CSV, rounding numeric columns
+write_csv(
+  sig_mods_all_sig %>%
+    mutate(across(where(is.numeric), ~ round(., 3))),  # Round numeric values for readability
+  here("processed-data", "model results", "table_qudo_sx.csv")
+)
+
+# Display summaries
+sig_mods_all_sig %>% group_by(analysis) %>% count() 
+sig_mods_all_sig %>% group_by(analysis, variable) %>% count()
+
+# Show the final `sig_mods_all_sig` with the additional `slope_estimate` column
+sig_mods_all_sig
+
+```
+
+#2.75. FIGURES: All dCWC relationships visualized:
+```{r}
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(janitor)
+library(readr)
+
+# Initialize an empty data frame for results
+sig_mods_all <- data.frame()
+
+# Loop through each analysis and variable
+variables <- c("water_potential", "lwa_g_cm2", "lwc_mean", "lma_g_cm2")
+
+for (variable in variables) {
+  
+  # Define grouping based on the variable
+  grouping_vars <- if (variable == "lma_g_cm2") c("date_new") else c("date_new", "time")
+  
+  # Process the data and run the models
+  results <- dcwc_allanalyses %>%
+    group_by(across(all_of(grouping_vars)), analysis) %>%
+    filter(n() > 1) %>%  # Ensure sufficient data points
+    nest() %>%           # Nest the grouped data
+    mutate(model = map(data, ~ tryCatch(lm(slope ~ get(variable), data = .x), error = function(e) NULL))) %>%
+    mutate(
+      R_squared = map_dbl(model, ~ if (!is.null(.x)) summary(.x)$r.squared else NA),
+      p_value = map_dbl(model, ~ {
+        if (!is.null(.x) && nrow(summary(.x)$coefficients) >= 2) {
+          summary(.x)$coefficients[2, 4]  # Extract p-value
+        } else {
+          NA  # Return NA if no coefficients
+        }
+      }),
+      slope_estimate = map_dbl(model, ~ {
+        if (!is.null(.x) && nrow(summary(.x)$coefficients) >= 2) {
+          summary(.x)$coefficients[2, 1]  # Extract slope estimate
+        } else {
+          NA  # Return NA if unavailable
+        }
+      }),
+      variable = variable
+    ) %>%
+    select(analysis, variable, everything(), -data, -model) %>%
+    ungroup()
+  
+  # Append results to the main data frame
+  sig_mods_all <- bind_rows(sig_mods_all, results)
+}
+
+# Filter results based on p-value and analysis
+sig_mods_all_sig <- sig_mods_all %>%
+  janitor::clean_names() %>%
+  filter(p_value < 0.05) %>%
+  filter(!(analysis == "dcwc_justmay"))
+
+# Save results to CSV with rounded numeric columns
+write_csv(
+  sig_mods_all_sig %>%
+  mutate(across(where(is.numeric), ~ round(., 3))),
+  here::here("processed-data", "model results", "table_quag_sx.csv")
+)
+
+# Display summaries
+sig_mods_all_sig %>%
+  group_by(analysis) %>%
+  count()
+
+sig_mods_all_sig %>%
+  group_by(analysis, variable) %>%
+  count()
+
+# Show the final results with the added slope estimates
+sig_mods_all_sig
+
+```
+
+```{r}
+fig_data <- merge(dcwc_alldata %>% select(-analysis), 
+sig_mods_all_sig  %>% 
+                    mutate(date_wp = date_new), 
+                           by = c("date_wp", "time"), all.y = T) %>% 
+  mutate(r_squared = round(r_squared, 3)) %>% 
+  filter(!(variable == "lma_g_cm2")) %>% 
+  ungroup() %>% 
+  distinct() %>% 
+  dplyr::group_by(variable, date_wp, time, analysis) %>% 
+  mutate(count = n()) %>% 
+  filter(count > 5) 
+
+fig_data %>% 
+  group_by(variable, date_wp, time) %>% 
+  count()
+
+dcwc_alldata %>% 
+  group_by(week, date_wp, time) %>% 
+  count()
+
+# Step 1: Create variable_new column based on specified conditions
+df <- sig_mods_all %>%
+  #filter(!is.na(time)) %>% 
+  unite("variable_new", c("variable", "time"), remove = F) %>% 
+  select(date_new, slope_estimate, analysis, p_value, variable_new, time) %>% 
+  distinct() %>% 
+  filter(!(variable_new %in% c("water_potential_md") & slope_estimate < -0.005)) %>% 
+ # filter(!(variable_new %in% c("lwc_mean") & slope_estimate < -0.3)) %>% 
+#  filter(slope_estimate < 10) %>% 
+  # filter(!(date_wp %in% c("2022-03-23",
+  #                         "2022-03-30",
+  #                        "2022-04-06",
+  #                        "2022-04-13"
+  #                       # "2022-05-23",
+  #                       # "2022-07-19",
+  #                       # "2022-08-18",
+  #                       # "2022-09-15"
+  #                       ))) %>%
+  filter(!(analysis == "before")) %>% 
+  mutate(variable_new = case_when(variable_new %in% c("lma_g_cm2_NA") ~ "LMA (g/cm2)", 
+         TRUE ~ as.character(variable_new))) %>% 
+  filter(!(variable_new == "MA (g/cm2)"))
+
+# Step 2: Plotting
+ggplot(df, aes(x = date_new, y = slope_estimate, color = analysis)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray") +
+  geom_vline(xintercept = unique(df$date_wp), color = "gray90", linetype = "dotted") +
+  geom_jitter(aes(size = ifelse(p_value < 0.05, 3, 1)), 
+              position = position_jitter(width = 3, height = 0)) +
+  facet_wrap(~ variable_new, 
+    scales = "free", 
+       nrow = 4,
+    labeller = labeller(
+     .multi_line = T),
+   # labeller = label_wrap_gen(multi_line = F),
+  ) +
+  labs(x = "Date", 
+       y = "Slope", 
+       color = "Analysis") +
+  scale_size_identity() +  # Ensures that the size mapping from `ifelse` is used directly
+ # theme_minimal(base_size = 12) + 
+  scale_x_date(date_labels = "%d %b %Y", breaks = unique(df$date_wp)) +
+  scale_color_manual(values = c("#c969a1", "#ffbb44", "#122451", "green")) + 
+  labs(x = "")+
+  theme(
+    strip.text = element_text(size = 10, face = "bold"),
+   # axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0.5),
+    axis.title.x = element_text(), 
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom",
+    strip.background = element_rect(fill = "white", color = "black"),
+    panel.spacing = unit(1, "lines"),
+    axis.text.x = element_blank(), # Hide x-axis text for all panels
+    axis.ticks.x = element_blank(), # Hide x-axis ticks for all panels
+    strip.text.x = element_text(face = "bold"),
+    axis.text.x.bottom = element_text(angle = 90, vjust = 0.5, hjust = 0.5) # Show x-axis text only at the bottom
+    #axis.ticks.x.bottom = element_line() # Show x-axis ticks only at the bottom
+  )
+```
+#3. MEAN WATER POTS.
+
+Make column with mean:
+
+```{r}
+dcwc_allanalyses0 <- dcwc_allanalyses %>% 
+  mutate(time_means = case_when(
+    date_new %in% c("2022-04-29", "2022-05-11", "2022-05-29", "2022-07-19") ~ "April 29-July 19",
+    #month %in% c("2022-04-29", "2022-05-11", "2022-05-29") ~ "April 29-May 29",
+   # month %in% c("2022-04-29", "2022-05-11", "2022-05-29", "2022-07-19") ~ "April 29-July 19",
+    TRUE ~ as.character("Other dates")
+  )) 
+
+dcwc_md_nas <- dcwc_allanalyses0 %>% 
+  filter(time %in% c("md"#
+                     #, "NA"
+                     )) %>% 
+  group_by(time_means, time, tree) %>% 
+  mutate(water_potential = mean(water_potential, na_rm = T),
+         lwa_g_cm2 = mean(lwa_g_cm2, na.rm = T), 
+         lwc_mean = mean(lwc_mean, na.rm = T), 
+         lma_g_cm2 = mean(lma_g_cm2, na.rm  = T)) %>% 
+  filter(time_means %in% c("April 29-July 19")) %>% 
+  select(-cwc, -date_new, -week) %>% 
+  distinct() %>% 
+  mutate(time = "md")
+
+dcwc_pd_nas <-  dcwc_allanalyses0 %>% 
+  filter(time %in% c("pd"#, "NA"
+                     )) %>% 
+  group_by(time_means, time, tree) %>% 
+  mutate(water_potential = mean(water_potential, na_rm = T),
+         lwa_g_cm2 = mean(lwa_g_cm2, na.rm = T), 
+         lwc_mean = mean(lwc_mean, na.rm = T), 
+         lma_g_cm2 = mean(lma_g_cm2, na.rm  = T)) %>% 
+  filter(time_means %in% c("April 29-July 19")) %>% 
+  select(-cwc, -date_new, -week) %>% 
+  distinct() %>% 
+  mutate(time = "pd")
+
+dcwc_allanalyses_new <- bind_rows(dcwc_md_nas, dcwc_pd_nas)
+  
+
+#  fill(c("water_potential", "lma_g_cm2", "lwa_g_cm2", "lwc_mean"), .direction = "downup")
+
+
+unique(dcwc_allanalyses$date_new)
+
+summary(dcwc_allanalyses_new)
+```
+
+```{r}
+dcwc_allanalyses_new %>% 
+  ggplot(aes(y = water_potential, 
+             x = slope,
+             color = time, 
+             shape = analysis
+             )) +
+  geom_point(alpha = .5) +
+  geom_smooth(se =F, method = "lm")
+
+dcwc_allanalyses_new %>% 
+  ggplot(aes(y = lwc_mean, 
+             x = slope,
+             color = time, 
+             shape = analysis
+             )) +
+  geom_point(alpha = .5) +
+  geom_smooth(se =F, method = "lm")
+
+dcwc_allanalyses_new %>% 
+  ggplot(aes(y = lwa_g_cm2, 
+             x = slope,
+             color = time, 
+             shape = analysis
+             )) +
+  geom_point(alpha = .5) +
+  geom_smooth(se =F, method = "lm")
+
+dcwc_allanalyses_new %>% 
+  ggplot(aes(y = lma_g_cm2, 
+             x = slope,
+             color = time, 
+             shape = analysis
+             )) +
+  geom_point(alpha = .5) +
+  geom_smooth(se =F, method = "lm")
+```
+
+```{r}
+library(dplyr)
+library(tidyr)
+library(purrr)
+library(janitor)
+library(readr)
+
+# Initialize an empty data frame for results
+sig_mods_all <- data.frame()
+
+# Loop through each analysis and variable
+variables <- c("water_potential", "lwa_g_cm2", "lwc_mean", "lma_g_cm2")
+
+for (variable in variables) {
+  
+  # Define grouping based on the variable
+  grouping_vars <-c("time")
+  
+  # Process the data and run the models
+  results <- dcwc_allanalyses_new %>%
+    group_by(across(all_of(grouping_vars)), analysis) %>%
+    filter(n() > 1) %>%  # Ensure sufficient data points
+    nest() %>%           # Nest the grouped data
+    mutate(model = map(data, ~ tryCatch(lm(slope ~ get(variable), data = .x), error = function(e) NULL))) %>%
+    mutate(
+      R_squared = map_dbl(model, ~ if (!is.null(.x)) summary(.x)$r.squared else NA),
+      p_value = map_dbl(model, ~ {
+        if (!is.null(.x) && nrow(summary(.x)$coefficients) >= 2) {
+          summary(.x)$coefficients[2, 4]  # Extract p-value
+        } else {
+          NA  # Return NA if no coefficients
+        }
+      }),
+      slope_estimate = map_dbl(model, ~ {
+        if (!is.null(.x) && nrow(summary(.x)$coefficients) >= 2) {
+          summary(.x)$coefficients[2, 1]  # Extract slope estimate
+        } else {
+          NA  # Return NA if unavailable
+        }
+      }),
+      variable = variable
+    ) %>%
+    select(analysis, variable, everything(), -data, -model) %>%
+    ungroup()
+  
+  # Append results to the main data frame
+  sig_mods_all <- bind_rows(sig_mods_all, results)
+}
+
+# Filter results based on p-value and analysis
+sig_mods_all_sig <- sig_mods_all %>%
+  janitor::clean_names() %>%
+  filter(p_value < 0.05) %>%
+  filter(!(analysis == "dcwc_justmay"))
+
+# Save results to CSV with rounded numeric columns
+write_csv(
+  sig_mods_all_sig %>%
+    mutate(across(where(is.numeric), ~ round(., 3))),
+  here::here("processed-data", "model results", "table_quag_sx.csv")
+)
+
+# Display summaries
+sig_mods_all_sig %>%
+  group_by(analysis) %>%
+  count()
+
+sig_mods_all_sig %>%
+  group_by(analysis, variable) %>%
+  count()
+
+# Show the final results with the added slope estimates
+sig_mods_all_sig
+
+```
+
+#3.5. FIGURES: All mean_mpa ~ dCWC relationships:
+
+```{r}
+# fig_data <- merge(dcwc_alldata %>% select(-analysis), sig_mods_all_sig, by = c("date_wp", "time"), all.y = T) %>% 
+#   mutate(r_squared = round(r_squared, 3)) %>% 
+#   filter(!(variable == "lma_g_cm2")) %>% 
+#   ungroup() %>% 
+#   distinct() %>% 
+#   dplyr::group_by(variable, date_wp, time, analysis) %>% 
+#   mutate(count = n()) %>% 
+#   filter(count > 5) 
+
+# fig_data %>% 
+#   group_by(variable, date_wp, time) %>% 
+#   count()
+
+# Step 1: Create variable_new column based on specified conditions
+df <- sig_mods_all %>%
+  filter(!is.na(time)) %>% 
+  unite("variable_new", c(variable,time), remove = F) %>% 
+  select(slope_estimate, analysis, p_value, variable_new, variable, time) %>% 
+  distinct() %>% 
+  filter(!(variable_new %in% c("water_potential_md") & slope_estimate < -0.005)) %>% 
+ # filter(!(variable_new %in% c("lwc_mean") & slope_estimate < -0.3)) %>% 
+#  filter(slope_estimate < 10) %>% 
+  # filter(!(date_wp %in% c("2022-03-23",
+  #                         "2022-03-30",
+  #                        "2022-04-06",
+  #                        "2022-04-13"
+  #                       # "2022-05-23",
+  #                       # "2022-07-19",
+  #                       # "2022-08-18",
+  #                       # "2022-09-15"
+  #                       ))) %>%
+  filter(!(analysis == "before")) %>% 
+  mutate(variable_new = case_when(variable_new %in% c("lma_g_cm2_NA") ~ "LMA (g/cm2)", 
+         TRUE ~ as.character(variable_new))) %>% 
+  filter(!(variable_new == "MA (g/cm2)"))
+
+# Step 2: Plotting
+ggplot(df, aes(x = time, 
+               y = slope_estimate, 
+               color = analysis)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray") +
+  #geom_vline(xintercept = unique(df$date_wp), color = "gray90", linetype = "dotted") +
+  geom_jitter(aes(size = ifelse(p_value < 0.05, 3, 1)), 
+              #position = position_jitter(width = 3, height = 0)
+              ) +
+  facet_wrap(~ variable, 
+    scales = "free", 
+       nrow = 4,
+    labeller = labeller(
+     .multi_line = T),
+   # labeller = label_wrap_gen(multi_line = F),
+  ) +
+  labs(x = "Analysis", 
+       y = "Slope", 
+       color = "Analysis") +
+  scale_size_identity() +  # Ensures that the size mapping from `ifelse` is used directly
+ # theme_minimal(base_size = 12) + 
+ # scale_x_date(date_labels = "%d %b %Y", breaks = unique(df$date_wp)) +
+  scale_color_manual(values = c("#c969a1", "#ffbb44", "#122451", "#8E9D68")) + 
+  labs(x = "")+
+  theme(
+    strip.text = element_text(size = 10, face = "bold"),
+   # axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0.5),
+    axis.title.x = element_text(), 
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom",
+    strip.background = element_rect(fill = "white", color = "black"),
+    panel.spacing = unit(1, "lines"),
+    axis.text.x = element_blank(), # Hide x-axis text for all panels
+    axis.ticks.x = element_blank(), # Hide x-axis ticks for all panels
+    strip.text.x = element_text(face = "bold"),
+    axis.text.x.bottom = element_text(angle = 90, vjust = 0.5, hjust = 0.5) # Show x-axis text only at the bottom
+    #axis.ticks.x.bottom = element_line() # Show x-axis ticks only at the bottom
+  )
+```
+```{r}
+# fig_data <- merge(dcwc_alldata %>% select(-analysis), sig_mods_all_sig, by = c("date_wp", "time"), all.y = T) %>% 
+#   mutate(r_squared = round(r_squared, 3)) %>% 
+#   filter(!(variable == "lma_g_cm2")) %>% 
+#   ungroup() %>% 
+#   distinct() %>% 
+#   dplyr::group_by(variable, date_wp, time, analysis) %>% 
+#   mutate(count = n()) %>% 
+#   filter(count > 5) 
+# 
+# fig_data %>% 
+#   group_by(variable, date_wp, time) %>% 
+#   count()
+# 
+# dcwc_alldata %>% 
+#   group_by(week, date_wp, time) %>% 
+#   count()
+
+
+# # Step 1: Create variable_new column based on specified conditions
+# df <- sig_mods_all %>%
+#   filter(!is.na(time)) %>% 
+#   mutate(variable_new = ifelse(variable == "water_potential", paste(variable, time, sep = "_"), variable)) %>%
+#   select(date_wp, slope_estimate, analysis, p_value, variable_new) %>% 
+#   distinct() %>% 
+#   filter(!(variable_new %in% c("water_potential_md") & slope_estimate < -0.005)) %>% 
+#   filter(!(variable_new %in% c("lwc_mean") & slope_estimate < -0.3)) %>% 
+# #  filter(slope_estimate < 10) %>% 
+#   # filter(!(date_wp %in% c("2022-03-23",
+#   #                         "2022-03-30",
+#   #                        "2022-04-06",
+#   #                        "2022-04-13"
+#   #                       # "2022-05-23",
+#   #                       # "2022-07-19",
+#   #                       # "2022-08-18",
+#   #                       # "2022-09-15"
+#   #                       ))) %>%
+#   filter(!(analysis == "dcwc_beforeleafout"))
+# 
+# # Step 2: Plotting
+# ggplot(df, aes(x = date_wp, y = slope_estimate, color = analysis)) +
+#   geom_hline(yintercept = 0) +
+#   # ggbeeswarm::geom_beeswarm(aes(size = ifelse(p_value < 0.05, 3, 1)), 
+#   #             position = position_jitter(width = 1, height = 0)) +
+#    geom_jitter(aes(size = ifelse(p_value < 0.05, 3, 1)), 
+#               position = position_jitter(width = 3, height = 0)) +
+#   facet_wrap(~ variable_new, scales = "free", labeller = label_wrap_gen(multi_line = TRUE)) +
+#   labs(x = "Date", y = "Slope", color = "Analysis") +
+#   scale_size_identity() +  # Ensures that the size mapping from `ifelse` is used directly
+#   theme(
+#     strip.text = element_text(size = 10),
+#     legend.position = "bottom"
+#   ) +
+#   scale_x_date(date_labels="%d %b %Y", breaks = unique(df$date_wp)) +
+#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=.5)) +
+#   scale_color_manual(values = c("#c969a1", "#ffbb44","#122451"))
+```
+#4. FIGURES: dCWC and the best dates: 
 ```{r}
 mpa_plot <- fig_data %>% 
   filter(variable == "water_potential", 

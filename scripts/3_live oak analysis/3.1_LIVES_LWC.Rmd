@@ -54,6 +54,8 @@ data_og_quag_lwc_mean  %>%
   summarise(n = n())
 
 data_quag_raw  %>% 
+  select(week, time, date_wp, tree) %>% 
+  distinct() %>% 
   group_by(week, time, date_wp) %>% 
   summarise(n = n())
 ```
@@ -829,7 +831,7 @@ library(tidyverse)
 library(lubridate)
 library(readxl)
 library(gridExtra)
-library(calecopal)
+#library(calecopal)
 library(rstatix)
 library(vars)
 library(MuMIn)
