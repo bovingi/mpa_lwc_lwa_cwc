@@ -378,7 +378,7 @@ space_slope <- final_df_space_se %>%
 space_slope
 ```
 
-```{r, eval = F}
+```{r, eval = T}
 data <- data_og_quag_lwa %>% 
   filter(time == "md") %>% 
   select(tree, week, water_potential, lwa_g_cm2_new) %>% 
@@ -2644,7 +2644,7 @@ hyd_slopes <- final_df_all %>%
 hyd_slopes
 ```
 
-####***Space
+####***Space SE
 
 ```{r}
 space_slope <- final_df_space_se %>% 
@@ -2739,6 +2739,123 @@ space_slope <- final_df_space_se %>%
  # color_many_2 +
   guides(color = guide_legend(nrow = 2)) #+
 space_slope
+```
+```{r}
+space_slope_bs <- final_df_all %>% 
+   filter(!week %in% c(9)) %>% 
+  filter(analysis == "space") %>% 
+  mutate(week = as.factor(week)) %>% 
+  mutate(week = case_when(
+        week %in% c(10) ~ "2022-03-08",
+        week %in% c(10) ~  "2022-03-15", 
+        week %in% c(12) ~  "2022-03-25",
+        week %in% c(14) ~  "2022-04-04",
+        week %in% c(15) ~  "2022-04-11",
+        week %in% c(17) ~  "2022-04-25", 
+        week %in% c(19) ~  "2022-05-09",
+        week %in% c(21) ~  "2022-05-23",
+        week %in% c(29) ~  "2022-07-19",
+        week %in% c(33) ~  "2022-08-18",
+        week %in% c(37) ~  "2022-09-15")) %>% 
+  mutate(week = format(as.Date(week), "%m-%d")) %>% 
+   #filter(!week %in% c(9, 18)) %>% 
+  filter(analysis == "space") %>% 
+ # mutate(week = as.numeric(week)) %>% 
+   ggplot(aes(color= as.factor(week))
+    ) + 
+  #  geom_rect(ymin = 12.3, ymax = 18, 
+  #         xmin = -Inf, xmax = Inf, fill = "#969696", alpha = .01, color = NA) +
+  # geom_hline(aes(yintercept = 15, color = "#525252")) + 
+  geom_point(aes(y = slope ,x = as.factor(week)), size =2) +
+    geom_point(aes(y = upr, x = as.factor(week)), size = 1) +
+  geom_point(aes(y = lwr, x = as.factor(week)), size = 1) +
+  #geom_line(aes(group = week, y = week, x = upr)) +
+  geom_segment(aes(y= lwr, 
+                   yend = upr, 
+                   x = as.factor(week), 
+                   xend = as.factor(week), 
+                   color = as.factor(week)))+
+  labs(x = "Week", 
+       color = "Week", 
+       y = " ") +
+  theme(legend.position="none",
+      strip.background = element_blank(),
+      strip.text.x = element_text(size = 12),
+      plot.title = element_text(size=13),
+      axis.title.y = element_blank(),
+      axis.title.x = element_blank(),
+     axis.text = element_text(size = 12),
+     legend.key=element_blank(), 
+     legend.text = element_text(size = 13), 
+    # legend.title = element_text(size = 16),
+    legend.title = element_blank(),
+     legend.margin=margin(0,0,0,0),
+      legend.box.margin=margin(-5,-8,-8,-8),
+    plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt")
+    ) +
+  #scale_x_continuous(breaks = c(10, 12, 14,15, 17, 19, 21, 29, 33, 37)
+                  #   breaks = c(37, 33, 29, 21, 19, 17, 15, 14, 12, 10)
+                      # seq(10, 30, by = 1)
+  #                   ) +
+  geom_hline(yintercept = 0, linetype="dotted") + 
+  color_week_assigned+
+ # color_many_2 +
+  guides(color = guide_legend(nrow = 2)) +
+  theme(legend.position="none",
+      strip.background = element_blank(),
+      strip.text.x = element_text(size = 12),
+      plot.title = element_text(size=13),
+      axis.title.y = element_blank(),
+      axis.title.x = element_blank(),
+     axis.text = element_text(size = 12),
+     legend.key=element_blank(), 
+     legend.text = element_text(size = 13), 
+    # legend.title = element_text(size = 16),
+    legend.title = element_blank(),
+     legend.margin=margin(0,0,0,0),
+      legend.box.margin=margin(-5,-8,-8,-8),
+    plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt"),
+     axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=.25)
+    ) +
+  #scale_x_continuous(breaks = c(10, 12, 14,15, 17, 19, 21, 29, 33, 37)
+                  #   breaks = c(37, 33, 29, 21, 19, 17, 15, 14, 12, 10)
+                      # seq(10, 30, by = 1)
+  #                   ) +
+  geom_hline(yintercept = 0, linetype="dotted") + 
+ scale_color_manual(values = c("9" ="#122241",
+                                                     "03-08" = "#48578E", #week 10
+                                                    "03-15" = "#48578E", #10
+                                                    # "11" = "#122451", 
+                                                     "03-23" = "#165E6F", #12
+                                                     "03-25" = "#165E6F", #12
+                                                     "03-30" = "#B6D0E2", #14
+                                                     "04-04" = "#B6D0E2", #14
+                                                     "04-06" = "#B6D0E2", #14
+                                                     #"13" = "#B6D0E2", 
+                                                     "04-13" = "#729684", 
+                                                     "04-11" = "#729684", 
+                                                    # "16" = "#8E9D68", 
+                                                     "04-27" = "#8E9D30", #17
+                                                     "04-25" = "#8E9D30", #17
+                                                    # "18" = "#D7B110",
+                                                     "05-09" = "#D9C000", #19
+                                                    # "20" = "#F8A63A" ,
+                                                    # "21" = "#F8A63A" ,
+                                                     "05-23" = "#EC7E28", #21
+                                                     "07-19" = "#CC5210", #29
+                                                     "08-18"= "#E97B6E", #33
+                                                    # "37" = "#b33b72",
+                                                     "09-15" = "#CC5265" #37
+                                                     #"39" = "#862d46" 
+                                                    # "39" = "#C969A1"
+                                                   #  "37" = "#b33b72",
+                                                   #  "39" = "#893843"
+                                                    )) +
+ # color_many_2 +
+  guides(color = guide_legend(nrow = 2)) #+
+  #ylim(-8, 35)
+ # scale_x_reverse()
+space_slope_bs
 ```
 
 
@@ -3090,7 +3207,7 @@ x.grob1 <- textGrob("Time",
                    gp=gpar(fontface="bold", #col="blue", 
                            fontsize=15))
 
-combined_slopes_wide <- cowplot::plot_grid(hyd_slopes , NULL, time_summary, NULL,space_slope,  
+combined_slopes_wide <- cowplot::plot_grid(hyd_slopes , NULL, time_summary, NULL,space_slope_bs,  
                                            # NULL, pv_slope,
                                    nrow = 1, 
                                   rel_widths = c(1, -.02, 1, -.02, 1 #, -.02, .5
@@ -3098,7 +3215,7 @@ combined_slopes_wide <- cowplot::plot_grid(hyd_slopes , NULL, time_summary, NULL
                                   labels = c("D", "", "E", "", "F"#,"", "G"
                                              ),
                                   label_x = .2,
-                                  hjust= c(1, 0, 3, 0, 4),
+                                  hjust= c(1, 0, 0, 0, 1),
                                   label_y = .98
                                   # rel_heights = c(.15, 1, .3), 
                                    #rel_widths = c(1, 1, 1), 
