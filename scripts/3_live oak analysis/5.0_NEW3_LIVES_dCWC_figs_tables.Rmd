@@ -14,22 +14,6 @@ datver <- "20230724"
 here = here::here
 ```
 
-```{r}
-#OLD TABLE:
-# sig_mods_all <- bind_rows(read_csv(here("processed-data", "model results", "dcwc_mods_lwa.csv")),
-#                           read_csv(here("processed-data", "model results", "dcwc_mods_lwc.csv")),
-#                           read_csv(here("processed-data", "model results", "dcwc_mods.csv"))
-#                           ) %>%
-#   mutate(across(where(is.numeric), ~ round(., 3)))
-# sig_mods_all
-# 
-# 
-# write_csv(sig_mods_all, here(here("processed-data", "model results", "table_sx.csv")))
-```
-
-
-
-
 
 ```{r}
 #Many colors: 
@@ -48,7 +32,7 @@ color_very_many <- scale_color_manual(values = mycolors)
 
 ```{r}
 data_og_cwc1 <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".csv")), show_col_types = F) %>%  
-  filter(species %in% c("blue oak")) %>% 
+  filter(species %in% c("live oak")) %>% 
   select(tree, week, water_potential, cwc, time_season, time, site, date_wp) %>% 
   mutate(water_potential = -1*water_potential) %>% 
   distinct() %>% 
@@ -199,6 +183,11 @@ data <- filtered_data %>%
   filter(!(date_wp %in%  ("2022-09-15")))
 data
 
+data %>% 
+  ggplot(aes(y = cwc, x = date_wp, color = as.factor(tree))) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = F)
+
 #How many unique trees did we sample across these time periods? 39!
 num_unique_trees <- length(unique(data$tree))
 cat("Number of unique trees in the dataset:", num_unique_trees, "\n")
@@ -301,7 +290,7 @@ dcwc_df_no_outliers <- dcwc_df %>%
 # Print the cleaned dataset without outliers
 print(dcwc_df_no_outliers)
 
-dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_qudo_afterleafout_df_no_outliers.csv"))
+dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_quag_afterleafout_df_no_outliers.csv"))
 ```
 
 Early season: 
@@ -423,7 +412,7 @@ dcwc_df_no_outliers <- dcwc_df %>%
 # Print the cleaned dataset without outliers
 print(dcwc_df_no_outliers)
 
-dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_qudo_beforeleafout_df_no_outliers.csv"))
+dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_quag_beforeleafout_df_no_outliers.csv"))
 ```
 
 
@@ -547,7 +536,7 @@ dcwc_df_no_outliers <- dcwc_df %>%
 # Print the cleaned dataset without outliers
 print(dcwc_df_no_outliers)
 
-dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_qudo_justmay_df_no_outliers.csv"))
+dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_quag_justmay_df_no_outliers.csv"))
 ```
 
 
@@ -674,7 +663,7 @@ dcwc_df_no_outliers <- dcwc_df %>%
 # Print the cleaned dataset without outliers
 print(dcwc_df_no_outliers)
 
-dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_qudo_wholedaterange_df_no_outliers.csv"))
+dcwc_df_no_outliers %>% write_csv(here("processed-data", "dcwc_quag_wholedaterange_df_no_outliers.csv"))
 ```
 #COMBINE:
 
@@ -682,23 +671,23 @@ Need dCWC, MPa, LWmass, LWarea, LMA
 
 ```{r}
 #from dCWC calculated above: 
-dcwc_wholedaterange1 <- read_csv(here("processed-data", "dcwc_qudo_wholedaterange_df_no_outliers.csv")) %>% 
+dcwc_wholedaterange1 <- read_csv(here("processed-data", "dcwc_quag_wholedaterange_df_no_outliers.csv")) %>% 
   mutate(analysis = "whole")
 
 
-dcwc_beforeleafout1 <- read_csv(here("processed-data", "dcwc_qudo_beforeleafout_df_no_outliers.csv"))%>% 
+dcwc_beforeleafout1 <- read_csv(here("processed-data", "dcwc_quag_beforeleafout_df_no_outliers.csv"))%>% 
   mutate(analysis = "before")
  
 
-dcwc_afterleafout1 <- read_csv(here("processed-data", "dcwc_qudo_afterleafout_df_no_outliers.csv")) %>% 
+dcwc_afterleafout1 <- read_csv(here("processed-data", "dcwc_quag_afterleafout_df_no_outliers.csv")) %>% 
   mutate(analysis = "after")
 
 
-dcwc_justmay1 <- read_csv(here("processed-data", "dcwc_qudo_justmay_df_no_outliers.csv")) %>% 
+dcwc_justmay1 <- read_csv(here("processed-data", "dcwc_quag_justmay_df_no_outliers.csv")) %>% 
   mutate(analysis = "just may")
 
 #lma, mpa, and lwmass and lwarea data: 
-data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
+data_quag_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
  # filter(time %in% c("md")) %>% 
   group_by(tree, week) %>% 
   mutate(lma_g_cm2 = mean(lma_g_cm2, na.rm = T), 
@@ -707,7 +696,7 @@ data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".cs
   group_by(tree, date_wp, time) %>% 
    mutate(lwa_g_cm2 = mean(lwa_g_cm2, na.rm = T)) %>% 
   ungroup() %>% 
-  filter(species %in% c("blue oak")) %>% 
+  filter(species %in% c("live oak")) %>% 
   select(week, tree, time, species, lma_g_cm2, water_potential, lwc_mean, lwa_g_cm2, date_wp) %>% 
   distinct() %>% 
 #So that dates line up across all analyses:
@@ -726,7 +715,7 @@ data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".cs
     TRUE ~ as.character(date_wp)
   )) %>% 
   mutate(date_wp = ymd(date_new)) 
-#Only want dates that we have good qudo data for:
+#Only want dates that we have good quag data for:
   # filter(date_wp %in% c("2022-03-08",
   #                       "2022-04-04",
   #                       "2022-04-11",
@@ -741,7 +730,7 @@ data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".cs
 
 
 ```{r}
-dcwc_alldata <- merge(dcwc_wholedaterange1, data_qudo_lma, by = c("tree", "week", "date_wp", "date_new"), all = T) %>% 
+dcwc_alldata <- merge(dcwc_wholedaterange1, data_quag_lma, by = c("tree", "week", "date_wp", "date_new"), all = T) %>% 
   distinct() %>%
   group_by(tree) %>% 
   fill(c(slope), .direction = "downup") %>% 
@@ -749,7 +738,7 @@ dcwc_alldata <- merge(dcwc_wholedaterange1, data_qudo_lma, by = c("tree", "week"
   group_by(week) %>% 
   fill(c("date_wp"), .direction = "downup") 
 
-dcwc_beforeleafout<- merge(dcwc_beforeleafout1 , data_qudo_lma, by = c("tree", "week","date_wp", "date_new"), all = T) %>% 
+dcwc_beforeleafout<- merge(dcwc_beforeleafout1 , data_quag_lma, by = c("tree", "week","date_wp", "date_new"), all = T) %>% 
   distinct() %>%
   group_by(tree) %>% 
   fill(c(slope), .direction = "downup") %>% 
@@ -758,7 +747,7 @@ dcwc_beforeleafout<- merge(dcwc_beforeleafout1 , data_qudo_lma, by = c("tree", "
   fill(c("date_wp"), .direction = "downup") 
   
 
-dcwc_afterleafout<- merge(dcwc_afterleafout1, data_qudo_lma, by = c("tree", "week", "date_wp", "date_new"), all = T) %>% 
+dcwc_afterleafout<- merge(dcwc_afterleafout1, data_quag_lma, by = c("tree", "week", "date_wp", "date_new"), all = T) %>% 
   distinct() %>%
   group_by(tree) %>% 
   fill(c(slope), .direction = "downup") %>% 
@@ -766,7 +755,7 @@ dcwc_afterleafout<- merge(dcwc_afterleafout1, data_qudo_lma, by = c("tree", "wee
   group_by(week) %>% 
   fill(c("date_wp"), .direction = "downup") 
 
-dcwc_justmay <-  merge(dcwc_justmay1, data_qudo_lma, by = c("tree", "week", "date_wp", "date_new"), all = T) %>% 
+dcwc_justmay <-  merge(dcwc_justmay1, data_quag_lma, by = c("tree", "week", "date_wp", "date_new"), all = T) %>% 
   distinct() %>%
   group_by(tree) %>% 
   fill(c(slope), .direction = "downup") %>% 
@@ -793,7 +782,7 @@ dcwc_allanalyses <- bind_rows(dcwc_afterleafout, dcwc_beforeleafout, dcwc_alldat
   fill(c("cwc"), .direction = "downup") %>% 
   select(-date_wp)
   
-#Only want dates that we have good qudo data for:
+#Only want dates that we have good quag data for:
   # filter(date_wp %in% c("2022-03-08",
   #                       "2022-04-04",
   #                       "2022-04-11",
@@ -895,7 +884,7 @@ sig_mods_all_sig <- as.data.frame(sig_mods_all) %>%
 
 # Write results to CSV, rounding numeric columns
 write_csv(sig_mods_all_sig %>%
-   mutate(across(where(is.numeric), ~ round(., 3))), here(here("processed-data", "model results", "table_qudo_sx.csv")))
+   mutate(across(where(is.numeric), ~ round(., 3))), here(here("processed-data", "model results", "table_quag_sx.csv")))
 
 # Display summaries
 sig_mods_all_sig %>% group_by(analysis) %>% count() 
@@ -1088,7 +1077,7 @@ sig_mods_all_sig <- sig_mods_all %>%
 write_csv(
   sig_mods_all_sig %>%
     mutate(across(where(is.numeric), ~ round(., 3))),  # Round numeric values for readability
-  here("processed-data", "model results", "table_qudo_sx.csv")
+  here("processed-data", "model results", "table_quag_sx.csv")
 )
 
 # Display summaries
@@ -1144,7 +1133,8 @@ df <- sig_mods_all %>%
   filter(!(analysis == "before")) %>% 
   mutate(variable_new = case_when(variable_new %in% c("lma_g_cm2_NA") ~ "LMA (g/cm2)", 
          TRUE ~ as.character(variable_new))) %>% 
-  filter(!(variable_new == "MA (g/cm2)"))
+  filter(!(variable_new == "MA (g/cm2)")) %>% 
+  mutate(date_wp = date_new)
 
 # Step 2: Plotting
 ggplot(df, aes(x = date_wp, y = slope_estimate, color = analysis)) +
@@ -1181,7 +1171,8 @@ ggplot(df, aes(x = date_wp, y = slope_estimate, color = analysis)) +
     strip.text.x = element_text(face = "bold"),
     axis.text.x.bottom = element_text(angle = 90, vjust = 0.5, hjust = 0.5) # Show x-axis text only at the bottom
     #axis.ticks.x.bottom = element_line() # Show x-axis ticks only at the bottom
-  )
+  ) +
+  ggtitle("Bonferonni")
 ```
 
 ```{r}
@@ -1247,16 +1238,16 @@ mpa_plot <- fig_data %>%
   filter(variable == "water_potential", 
          analysis == "dcwc_alldata"
         ) %>% 
-  filter(date_wp %in% c("2022-03-08",
-                        "2022-04-05",
-                        "2022-04-12",
-                        "2022-04-29",
-                        "2022-05-11",
-                        "2022-05-29",
-                        "2022-07-19",
-                        "2022-08-18",
-                        "2022-09-15"
-                        )) %>% 
+  # filter(date_wp %in% c("2022-03-08",
+  #                       "2022-04-05",
+  #                       "2022-04-12",
+  #                       "2022-04-29",
+  #                       "2022-05-11",
+  #                       "2022-05-29",
+  #                       "2022-07-19",
+  #                       "2022-08-18",
+  #                       "2022-09-15"
+  #                       )) %>% 
   mutate(time = case_when(
     time %in% c("md") ~ "Midday", 
     time %in% c("pd") ~ "Predawn"
@@ -1297,10 +1288,10 @@ mpa_plot <- fig_data %>%
 mpa_plot
 
 # Save plot
-ggsave(here::here("figures", "qudo figures", "dcwc_mpa_alldates_SI.jpg"), plot = mpa_plot, width = 10, height = 5)
+ggsave(here::here("figures", "quag figures", "dcwc_mpa_alldates_SI.jpg"), plot = mpa_plot, width = 10, height = 5)
 ```
 
-```{r}
+```{r, eval = F}
 lwc_plot <- fig_data %>% 
   filter(variable == "lwc_mean", 
         # analysis == "dcwc_alldata"
@@ -1338,7 +1329,7 @@ lwc_plot <- fig_data %>%
 lwc_plot
 ```
 
-```{r}
+```{r, eval = F}
 lwa_plot <- fig_data %>% 
   filter(variable == "lwa_g_cm2", 
          #analysis == "dcwc_alldata"
@@ -1378,7 +1369,7 @@ lwa_plot
 ```
 
 
-```{r}
+```{r, eval = F}
 lma_fig_data <- merge(dcwc_alldata %>% select(-analysis), sig_mods_all_sig, by = c("date_wp"), all = T) %>% 
   mutate(r_squared = round(r_squared, 3)) %>% 
   filter((variable == "lma_g_cm2")) %>% 
@@ -1548,7 +1539,7 @@ final_plot <- dcwc_plot / dcwc_mpa_plot +
 print(final_plot)
 
 # Save plot
-ggsave(here::here("figures", "qudo figures", "dcwc_SI.jpg"), plot = final_plot, width = 8, height = 8)
+ggsave(here::here("figures", "quag figures", "dcwc_SI.jpg"), plot = final_plot, width = 8, height = 8)
 ```
 
 #5. MEAN WATER POTS.
@@ -1578,11 +1569,19 @@ dcwc_allanalyses0 <- bind_rows(dcwc_allanalyses %>%
    # month %in% c("2022-04-29", "2022-05-11", "2022-05-29", "2022-07-19") ~ "April 29-July 19",
     TRUE ~ as.character("Other dates")
   )),
+    dcwc_allanalyses %>% 
+  mutate(time_means = case_when(
+    date_new %in% c("2022-05-11", "2022-07-19", "2022-09-15", "2022-08-18") ~ "July-September",
+    #month %in% c("2022-04-29", "2022-05-11", "2022-05-29") ~ "April 29-May 29",
+   # month %in% c("2022-04-29", "2022-05-11", "2022-05-29", "2022-07-19") ~ "April 29-July 19",
+    TRUE ~ as.character("Other dates")
+  )),
   dcwc_allanalyses %>% 
   mutate(time_means = "March 8-Sept 15")  
 ) %>% 
   filter(!(time_means == "Other dates"))
 
+ 
 unique(dcwc_allanalyses$date_new)
 ```
 
@@ -1658,7 +1657,8 @@ dcwc_allanalyses_new %>%
 dcwc_allanalyses_new %>% 
   ggplot(aes(y = lma_g_cm2, 
              x = slope,
-             shape = analysis
+             shape = analysis, 
+             color = analysis
              )) +
   geom_point(alpha = .5) +
   geom_smooth(se =F, method = "lm")
@@ -1723,7 +1723,7 @@ sig_mods_all_sig <- sig_mods_all %>%
 write_csv(
   sig_mods_all_sig %>%
     mutate(across(where(is.numeric), ~ round(., 3))),
-  here::here("processed-data", "model results", "table_qudo_sx.csv")
+  here::here("processed-data", "model results", "table_quag_sx.csv")
 )
 
 # Display summaries
@@ -1743,11 +1743,11 @@ sig_mods_all_sig
 #5.5. FIGURES: All mean_mpa ~ dCWC relationships:
 
 ```{r}
-fig_data <- merge(dcwc_allanalyses_new %>% select(-analysis), 
-                  sig_mods_all_sig, 
-                  by = c("time", "time_means"), all.y = T) %>%
- mutate(r_squared = round(r_squared, 3)) %>%
-   filter(!(variable == "lma_g_cm2")) %>%
+fig_data <- merge(dcwc_allanalyses_new, # %>% select(-analysis), 
+                  sig_mods_all, #%>% select(-slope_estimate), 
+                  by = c("time", "time_means", "analysis"), all.y = T) %>%
+ mutate(r_squared = round(R_squared, 3)) %>%
+   filter(!(variable == "lma_g_cm2" & time %in% c("pd"))) %>%
    ungroup() %>%
    distinct() %>%
    dplyr::group_by(variable, time_means, time, analysis) %>%
@@ -1759,7 +1759,7 @@ fig_data <- merge(dcwc_allanalyses_new %>% select(-analysis),
 #   count()
 
 # Step 1: Create variable_new column based on specified conditions
-df <- sig_mods_all %>%
+df <- fig_data %>%
   filter(!is.na(time)) %>% 
   unite("variable_new", c(variable,time), remove = F) %>% 
   #filter(!(analysis %in% c("before"))) %>% 
@@ -1783,7 +1783,7 @@ df <- sig_mods_all %>%
                                   variable %in% c("lwc_mean") ~ "LWmass (g)", 
                                   variable  %in% c("water_potential") ~ "Water Potential (MPa)", 
          TRUE ~ as.character(variable))) %>% 
-  filter(!(variable_new == "LMA (g/cm2)")) %>% 
+  #filter(!(variable_new == "LMA (g/cm2)")) %>% 
   mutate(analysis = case_when(
     analysis %in% c("after") ~ "April 29-May 29",
     analysis %in% c("before") ~ "March 8-April 12",
@@ -1792,12 +1792,17 @@ df <- sig_mods_all %>%
     TRUE ~ as.character(analysis)
   )) %>% 
   filter(!(analysis %in% c("May 3-May 29"))) %>% 
-  filter(!(time_means %in% c( "March 8-Sept 15")))
+  filter(!(time_means %in% c( "March 8-Sept 15", 
+                              "March 8-May 29")))%>% 
+  mutate(time = case_when(
+    time %in% c("pd") ~ "Predawn",
+    time %in% c("md") ~ "Midday",
+    ))
   
   
 
 # Step 2: Plotting
-ggplot(df, aes(x = time, 
+means_plot <- ggplot(df, aes(x = time, 
                y = slope_estimate, 
                shape = time_means,
                color = analysis)) +
@@ -1814,7 +1819,7 @@ ggplot(df, aes(x = time,
    # labeller = label_wrap_gen(multi_line = F),
   ) +
   labs(x = "Analysis", 
-       y = "Slope", 
+       y = "Metric~dCWC Slope", 
        color = "dCWC Timeframe", 
        shape = "Metric Timeframe") +
   scale_size_identity() +  # Ensures that the size mapping from `ifelse` is used directly
@@ -1834,7 +1839,7 @@ ggplot(df, aes(x = time,
     axis.text.x = element_blank(), # Hide x-axis text for all panels
     axis.ticks.x = element_blank(), # Hide x-axis ticks for all panels
     strip.text.x = element_text(face = "bold"),
-    axis.text.x.bottom = element_text(angle = 90, vjust = 0.5, hjust = 0.5) # Show x-axis text only at the bottom
+    axis.text.x.bottom = element_text(angle = 0, vjust = 0, hjust = 0, size = 10) # Show x-axis text only at the bottom
     #axis.ticks.x.bottom = element_line() # Show x-axis ticks only at the bottom
   ) +
   theme(
@@ -1846,8 +1851,238 @@ ggplot(df, aes(x = time,
   guides(
     color = guide_legend(order = 1),                 # Color legend on the top row
     shape = guide_legend(order = 2)                 # Shape legend on the bottom row
-  )
+  ) + 
+  ggtitle("Q. agrifolia")
+means_plot
+
+ggsave(here::here("figures", "quag figures", "means_plot_SI.jpg"), plot = means_plot, width = 6.5, height = 8)
 ```
 
 
+#6. NICE MEAN FIGURES:
 
+```{r, fig.height=7, fig.width=7}
+library(ggplot2)
+library(dplyr)
+library(patchwork)
+
+# Color palette for multiple groups
+nb.cols <- 40
+pal <- met.brewer("Cross")
+mycolors <- colorRampPalette(pal)(nb.cols)
+color_very_many <- scale_color_manual(values = mycolors) 
+
+# Define a common theme for consistency
+common_theme <- theme(
+  legend.position = "none",
+  strip.background = element_blank(),
+  strip.text.x = element_text(size = 12),
+  plot.title = element_text(size = 13),
+  axis.text.y = element_text(size = 12),
+  axis.text.x = element_text(size = 12),
+  axis.title.y = element_text(size = 16),
+  axis.title.x = element_text(size = 16),
+  legend.key = element_blank(),
+  legend.text = element_text(size = 10),
+  legend.title = element_text(size = 12),
+  legend.margin = margin(0, 0, 0, 0),
+  legend.box.margin = margin(-5, -8, -8, -8),
+  plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt")
+)
+
+# Plot 1: dcwc_plot
+dcwc_plot <- filtered_data %>% 
+  filter(week < 30) %>% #remove the september sampling
+  filter(tree %in% c(dcwc_wholedaterange1$tree)) %>% 
+  drop_na(cwc) %>% 
+  group_by(tree) %>% 
+  mutate(COUNT = n()) %>% 
+  filter(COUNT > 1) %>%  # Ensure tree has at least two measurements
+  select(-COUNT) %>%
+  group_by(tree) %>%
+  filter(
+    sum(format(as.Date(date_wp), "%m") == "05") > 0,  # Measurement in May
+    sum(format(as.Date(date_wp), "%m") == "03") > 0,  # Measurement in September
+    n() >= 2
+  ) %>%
+  ungroup() %>% 
+  mutate(date_wp = as.Date(date_wp)) %>%  # Explicit Date conversion
+  select(cwc, date_wp, tree) %>% 
+  distinct() %>% 
+  ggplot(aes(y = cwc, x = date_wp, color = as.factor(tree))) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, size = 0.5) +
+  labs(y = "CWC (g/cm2)", x = "Date") +
+  common_theme +
+  annotate("text", x = as.Date("2022-03-08"), y = max(filtered_data$cwc, na.rm = TRUE), 
+           label = "A", size = 6, fontface = "bold") +
+  color_very_many +
+  theme(plot.margin = unit(c(0.5, 0.5, 0, 0.5), "cm")) +
+  ggtitle("Q. agrifolia")
+dcwc_plot
+```
+
+
+```{r, fig.height=7, fig.width=7}
+# Plot 2: dcwc_mpa_plot with separate R-squared annotations and distinct labels
+
+fig_data1 <- merge(dcwc_allanalyses_new %>% 
+                     pivot_longer(cols = c(7:10), 
+                                  names_to = "variable",
+                                  values_to = "value"
+                                  ), 
+                   sig_mods_all
+                     ) %>% 
+  #select(variable, time, analysis, slope, p_value, R_squared, tree) %>% 
+  mutate(variable_new = case_when(variable %in% c("lma_g_cm2") ~ "LMA (g/cm2)", 
+                                  variable %in% c("lwa_g_cm2") ~ "LWarea (g/cm2)", 
+                                  variable %in% c("lwc_mean") ~ "LWmass (g)", 
+                                  variable  %in% c("water_potential") ~ "Water Potential (MPa)", 
+         TRUE ~ as.character(variable))) %>% 
+  filter(!(variable_new == "LMA (g/cm2)")) %>% 
+  mutate(time = case_when(
+    time %in% c("md") ~ "Midday", 
+    time %in% c("pd") ~ "Predawn",
+    TRUE ~ as.character(time)
+  )) %>% 
+  mutate(analysis = case_when(
+    analysis %in% c("after") ~ "April 29-May 29",
+    analysis %in% c("before") ~ "March 8-April 12",
+    analysis %in% c("whole") ~ "March 8-May 29",
+    analysis %in% c("just may") ~ "May 3-May 29",
+    TRUE ~ as.character(analysis)
+  )) %>% 
+  filter((analysis %in% c("March 8-May 29"))) %>% 
+  #filter((time_means %in% c("March 8-May 29"))) %>% 
+  filter((time_means %in% c("July-September"))) %>% 
+  # filter(variable == "water_potential", 
+  #        #analysis == "after"
+  #        #date_wp %in% c("2022-09-15", "2022-04-12")
+  #        ) %>% 
+  filter(p_value < 0.05) %>% 
+  mutate(#date_wp = as.Date(date_wp),  # Ensure Date type
+        # date_new = date_wp,
+         slope = as.numeric(slope),   # Ensure numeric
+        # r_squared = as.numeric(r_squared)
+         )   # Convert r_squared to numeric
+  #select(slope, water_potential, time, date_wp, analysis, r_squared) %>% 
+
+
+dcwc_mpa_plot <- fig_data1 %>% 
+  filter(variable %in% c("water_potential")) %>% 
+  ggplot(aes(y = value, 
+             x = slope, 
+             shape = time,
+             color = time)) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, size = 0.5) +
+ # facet_wrap(~date_wp, ncol = 2, labeller = label_value) +  # Show date without "date_wp:"
+  labs(
+    y = "Mean Water potential (Psi)", 
+    color = "Time",
+    shape = "Time",
+    x = "dCWC"
+  ) +
+  common_theme +
+  color_before_after +
+  #Add R-squared annotations for each facet separately
+  # geom_text(
+  #  data = fig_data1 %>% filter((analysis %in% c("March 8-May 29"))) %>% filter((time_means %in% c("March 8-May 29"))),
+  #   aes(label = paste("R-squared:", round(r_squared, 3))),
+  #   x = -Inf, y = -Inf, hjust = -0.1, vjust = -0.5, size = 4, color = time,
+  #   inherit.aes = FALSE
+  # ) +
+  # geom_text(
+  #   data = fig_data %>% filter(date_wp == "2022-09-15", variable == "water_potential",
+  #        analysis == "dcwc_alldata"),
+  #   aes(label = paste("R-squared:", round(r_squared, 3))),
+  #   x = -Inf, y = -Inf, hjust = -0.1, vjust = -0.5, size = 4, color = "black",
+  #   inherit.aes = FALSE
+  # ) +
+   # Add "B" and "C" labels in the upper left of each facet
+  geom_text(
+    # data = fig_data %>% filter(date_wp == "2022-03-08", variable == "water_potential",
+    #      analysis == "dcwc_alldata"),
+    aes(label = "B"),
+    x = -Inf, y = Inf, hjust = -0.2, vjust = 1.5, size = 6, fontface = "bold",
+    inherit.aes = FALSE
+  ) +
+  # geom_text(
+  #   data = fig_data %>% filter(date_wp == "2022-09-15"),
+  #   aes(label = "C"),
+  #   x = -Inf, y = Inf, hjust = -0.2, vjust = 1.5, size = 6, fontface = "bold",
+  #   inherit.aes = FALSE
+  # ) +
+ # theme(legend.position = "bottom") +
+  theme(legend.position=c(.135,.90))
+dcwc_mpa_plot
+
+# Calculate R-squared values for each group
+r_squared_data <- fig_data1 %>%
+  filter(variable == "water_potential") %>%
+  group_by(time) %>%
+  summarise(
+    R_squared = round(summary(lm(value ~ slope))$r.squared, 3),
+    slope_mean = mean(slope, na.rm = TRUE),
+    value_max = max(value, na.rm = TRUE)
+  )
+
+# Add R-squared annotations to the plot
+dcwc_mpa_plot <- fig_data1 %>%
+  filter(variable == "water_potential") %>%
+  ggplot(aes(y = value, 
+             x = slope, 
+             shape = time,
+             color = time)) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, size = 0.5) +
+  labs(
+    y = "Mean Water Potential (Psi)", 
+    color = "Time",
+    shape = "Time",
+    x = "dCWC"
+  ) +
+  common_theme +
+  color_before_after +
+  geom_text(
+    data = r_squared_data,
+    aes(
+      label = paste("R²:", R_squared),
+      x = .002, 
+      y = value_max - 1 # Adjust for label placement
+    ),
+    inherit.aes = T,
+    size = 4,
+    fontface = "italic",
+    show.legend = FALSE  # Suppress legend for this layer
+  ) +
+  theme(legend.position = c(0.135, 0.90)) +
+    geom_text(
+    # data = fig_data %>% filter(date_wp == "2022-03-08", variable == "water_potential",
+    #      analysis == "dcwc_alldata"),
+    aes(label = "B"),
+    x = -Inf, y = Inf, hjust = -0.2, vjust = 1.5, size = 6, fontface = "bold",
+    inherit.aes = FALSE
+  ) 
+
+# Combine plots with final layout
+final_plot <- dcwc_plot / dcwc_mpa_plot + 
+  plot_layout(heights = c(1, 2)) & 
+  theme(plot.margin = unit(c(0.5, 0.5, 0.1, 0.5), "cm"))
+
+# Display final plot
+print(final_plot)
+
+
+
+# Combine plots with final layout
+final_plot <- dcwc_plot/ dcwc_mpa_plot + 
+  plot_layout(heights = c(1, 2)) & 
+  theme(plot.margin = unit(c(0.5, 0.5, 0.1, 0.5), "cm"))
+
+# Display final plot
+print(final_plot)
+
+# Save plot
+ggsave(here::here("figures", "quag figures", "dcwc_SI.jpg"), plot = final_plot, width = 8, height = 8)
+```

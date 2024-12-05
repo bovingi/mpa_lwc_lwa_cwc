@@ -1,12 +1,30 @@
-analysis,variable,time,r_squared,p_value,slope_estimate
-before,water_potential,md,0.355,0.032,0.004
-whole,water_potential,md,0.33,0.025,0.001
-after,water_potential,pd,0.378,0.015,0.001
-before,water_potential,pd,0.329,0.04,0.008
-whole,water_potential,pd,0.69,0,0.003
-before,lwa_g_cm2,md,0.64,0.017,2.055
-before,lwa_g_cm2,pd,0.847,0,2.89
-before,lwc_mean,md,0.62,0.001,0.069
-before,lwc_mean,pd,0.469,0.01,0.053
-after,lma_g_cm2,md,0.487,0.025,0.406
-after,lma_g_cm2,pd,0.399,0.037,0.372
+analysis,variable,time,time_means,r_squared,p_value,slope_estimate
+before,water_potential,md,March 8-April 12,0.486,0.008,0.011
+whole,water_potential,md,March 8-April 12,0.534,0.005,0.006
+before,water_potential,md,March 8-May 29,0.443,0.013,0.011
+whole,water_potential,md,March 8-May 29,0.545,0.004,0.006
+after,water_potential,md,July-September,0.338,0.047,0.006
+before,water_potential,md,July-September,0.523,0.012,0.006
+whole,water_potential,md,July-September,0.643,0.003,0.004
+before,water_potential,md,March 8-Sept 15,0.525,0.012,0.007
+whole,water_potential,md,March 8-Sept 15,0.711,0.001,0.005
+whole,water_potential,pd,April 29-May 29,0.434,0.014,0.007
+after,water_potential,pd,March 8-April 12,0.316,0.046,0.013
+before,water_potential,pd,March 8-April 12,0.362,0.03,0.013
+whole,water_potential,pd,March 8-April 12,0.836,0,0.01
+after,water_potential,pd,March 8-May 29,0.293,0.037,0.012
+whole,water_potential,pd,March 8-May 29,0.796,0,0.011
+before,water_potential,pd,July-September,0.567,0.007,0.009
+whole,water_potential,pd,July-September,0.542,0.01,0.005
+after,water_potential,pd,March 8-Sept 15,0.389,0.013,0.011
+before,water_potential,pd,March 8-Sept 15,0.37,0.027,0.011
+whole,water_potential,pd,March 8-Sept 15,0.793,0,0.008
+before,lwa_g_cm2,md,April 29-May 29,0.816,0.036,2.916
+before,lwa_g_cm2,pd,April 29-May 29,0.808,0.002,2.906
+before,lwa_g_cm2,pd,March 8-Sept 15,0.416,0.017,2.357
+before,lwc_mean,md,April 29-May 29,0.554,0.014,0.079
+before,lwc_mean,md,July-September,0.5,0.01,0.136
+before,lwc_mean,pd,April 29-May 29,0.389,0.023,0.051
+before,lwc_mean,pd,March 8-Sept 15,0.31,0.048,0.057
+before,lma_g_cm2,md,March 8-Sept 15,0.401,0.02,1.825
+before,lma_g_cm2,pd,March 8-April 12,0.34,0.047,2.507

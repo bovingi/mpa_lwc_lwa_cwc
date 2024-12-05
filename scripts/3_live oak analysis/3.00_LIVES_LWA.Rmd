@@ -15,7 +15,14 @@ library(tidyverse)
 library(boot)
 source(here::here("scripts", "scripts_functions", "figure_info.R"))
 
-datver
+library(tidyverse)
+library(boot)
+source(here::here("scripts", "scripts_functions", "figure_info.R"))
+library(lme4)
+library(MuMIn) #for r.squaredGLMM fxn
+select = dplyr::select
+datver <- "20230724" #make sure this matches the datver in the processing script
+dataversion <- paste0("Data_", datver)
 ```
 
 #DATA: 
@@ -681,7 +688,7 @@ library(tidyverse)
 library(lubridate)
 library(readxl)
 library(gridExtra)
-library(calecopal)
+#library(calecopal)
 library(rstatix)
 library(vars)
 library(MuMIn)

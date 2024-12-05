@@ -1,11 +1,24 @@
 analysis,variable,time,time_means,r_squared,p_value,slope_estimate
-whole,water_potential,md,April 29-July 19,0.113,0.037,0.001
-whole,water_potential,md,March 8-April 29,0.11,0.042,0.001
-after,lwa_g_cm2,md,April 29-July 19,0.12,0.038,1.603
-whole,lwc_mean,md,April 29-July 19,0.125,0.027,0.006
-before,lwc_mean,pd,March 8-April 29,0.301,0.001,0.02
-whole,lwc_mean,pd,March 8-April 29,0.189,0.006,0.002
+before,water_potential,md,April 29-May 29,0.123,0.049,0.007
+whole,water_potential,md,April 29-May 29,0.283,0.002,0.004
+whole,water_potential,md,March 8-April 12,0.167,0.025,0.003
+before,water_potential,md,March 8-May 29,0.14,0.038,0.01
+whole,water_potential,md,March 8-May 29,0.235,0.007,0.005
+whole,water_potential,md,July-September,0.173,0.031,0.003
+whole,water_potential,md,March 8-Sept 15,0.248,0.013,0.006
+whole,water_potential,pd,July-September,0.127,0.049,0.002
+whole,lwa_g_cm2,md,April 29-May 29,0.305,0.002,1.427
+whole,lwa_g_cm2,pd,April 29-May 29,0.306,0.002,1.234
+before,lwc_mean,md,April 29-May 29,0.194,0.012,0.057
+whole,lwc_mean,md,April 29-May 29,0.319,0.001,0.027
+before,lwc_mean,md,March 8-May 29,0.173,0.018,0.038
+before,lwc_mean,md,July-September,0.13,0.042,0.062
+whole,lwc_mean,md,July-September,0.202,0.011,0.028
+just may,lwc_mean,md,July-September,0.124,0.038,0.029
+before,lwc_mean,pd,March 8-April 12,0.257,0.003,0.014
+whole,lwc_mean,pd,March 8-April 12,0.313,0.001,0.006
+before,lwc_mean,pd,March 8-May 29,0.255,0.003,0.028
 before,lwc_mean,pd,March 8-Sept 15,0.135,0.038,0.028
-after,lma_g_cm2,pd,April 29-July 19,0.11,0.048,1.379
-before,lma_g_cm2,pd,March 8-April 29,0.136,0.041,-1.902
-whole,lma_g_cm2,pd,March 8-April 29,0.114,0.041,-0.221
+whole,lma_g_cm2,md,March 8-May 29,0.135,0.046,-0.956
+whole,lma_g_cm2,pd,March 8-April 12,0.193,0.036,-0.593
+whole,lma_g_cm2,pd,March 8-May 29,0.213,0.01,-0.884
