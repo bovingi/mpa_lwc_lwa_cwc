@@ -1857,6 +1857,9 @@ means_plot
 
 ggsave(here::here("figures", "qudo figures", "means_plot_SI.jpg"), plot = means_plot, width = 6.5, height = 8)
 ```
+```{r}
+means_plot
+```
 
 
 #6. NICE MEAN FIGURES:
@@ -2077,4 +2080,194 @@ print(final_plot)
 
 # Save plot
 ggsave(here::here("figures", "qudo figures", "dcwc_SI.jpg"), plot = final_plot, width = 8, height = 8)
+```
+
+```{r, fig.height=7, fig.width=7}
+# Plot 1: dcwc_plot
+dcwc_plot <- filtered_data %>% 
+  filter(week < 30) %>% #remove the september sampling
+  filter(tree %in% c(dcwc_wholedaterange1$tree)) %>% 
+  drop_na(cwc) %>% 
+  group_by(tree) %>% 
+  mutate(COUNT = n()) %>% 
+  filter(COUNT > 1) %>%  # Ensure tree has at least two measurements
+  select(-COUNT) %>%
+  group_by(tree) %>%
+  filter(
+    sum(format(as.Date(date_wp), "%m") == "05") > 0,  # Measurement in May
+    sum(format(as.Date(date_wp), "%m") == "03") > 0,  # Measurement in September
+    n() >= 2
+  ) %>%
+  ungroup() %>% 
+  mutate(date_wp = as.Date(date_wp)) %>%  # Explicit Date conversion
+  select(cwc, date_wp, tree) %>% 
+  distinct() %>% 
+  ggplot(aes(y = cwc, x = date_wp, color = as.factor(tree))) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, size = 0.5) +
+  labs(y = "CWC (g/cm2)", x = "Date") +
+  common_theme +
+  annotate("text", x = as.Date("2022-03-05"), y = 0.13, 
+            hjust = 1.5, vjust = 1, 
+           label = "B", size = 6, fontface = "bold") +
+  color_very_many +
+  theme(plot.margin = unit(c(0.5, 0.5, 0, 0.5), "cm")) +
+  ggtitle("Q. douglassii")
+dcwc_plot
+
+# Plot 2: dcwc_mpa_plot with separate R-squared annotations and distinct labels
+
+fig_data1 <- merge(dcwc_allanalyses_new %>% 
+                     pivot_longer(cols = c(7:10), 
+                                  names_to = "variable",
+                                  values_to = "value"
+                                  ), 
+                   sig_mods_all
+                     ) %>% 
+  #select(variable, time, analysis, slope, p_value, R_squared, tree) %>% 
+  mutate(variable_new = case_when(variable %in% c("lma_g_cm2") ~ "LMA (g/cm2)", 
+                                  variable %in% c("lwa_g_cm2") ~ "LWarea (g/cm2)", 
+                                  variable %in% c("lwc_mean") ~ "LWmass (g)", 
+                                  variable  %in% c("water_potential") ~ "Water Potential (MPa)", 
+         TRUE ~ as.character(variable))) %>% 
+  filter(!(variable_new == "LMA (g/cm2)")) %>% 
+  mutate(time = case_when(
+    time %in% c("md") ~ "Midday", 
+    time %in% c("pd") ~ "Predawn",
+    TRUE ~ as.character(time)
+  )) %>% 
+  mutate(analysis = case_when(
+    analysis %in% c("after") ~ "April 29-May 29",
+    analysis %in% c("before") ~ "March 8-April 12",
+    analysis %in% c("whole") ~ "March 8-May 29",
+    analysis %in% c("just may") ~ "May 3-May 29",
+    TRUE ~ as.character(analysis)
+  )) %>% 
+  filter((analysis %in% c("March 8-May 29"))) %>% 
+  #filter((time_means %in% c("March 8-May 29"))) %>% 
+  filter((time_means %in% c("July-September"))) %>% 
+  # filter(variable == "water_potential", 
+  #        #analysis == "after"
+  #        #date_wp %in% c("2022-09-15", "2022-04-12")
+  #        ) %>% 
+  filter(p_value < 0.05) %>% 
+  mutate(#date_wp = as.Date(date_wp),  # Ensure Date type
+        # date_new = date_wp,
+         slope = as.numeric(slope),   # Ensure numeric
+        # r_squared = as.numeric(r_squared)
+         )   # Convert r_squared to numeric
+  #select(slope, water_potential, time, date_wp, analysis, r_squared) %>%
+
+
+
+dcwc_mpa_plot <- fig_data1 %>% 
+  filter(variable %in% c("water_potential")) %>% 
+  ggplot(aes(y = value, 
+             x = slope, 
+             shape = time,
+             color = time)) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, size = 0.5) +
+ # facet_wrap(~date_wp, ncol = 2, labeller = label_value) +  # Show date without "date_wp:"
+  labs(
+    y = "Mean Water potential (Psi)", 
+    color = "Time",
+    shape = "Time",
+    x = "dCWC"
+  ) +
+  common_theme +
+  color_before_after +
+  #Add R-squared annotations for each facet separately
+  # geom_text(
+  #  data = fig_data1 %>% filter((analysis %in% c("March 8-May 29"))) %>% filter((time_means %in% c("March 8-May 29"))),
+  #   aes(label = paste("R-squared:", round(r_squared, 3))),
+  #   x = -Inf, y = -Inf, hjust = -0.1, vjust = -0.5, size = 4, color = time,
+  #   inherit.aes = FALSE
+  # ) +
+  # geom_text(
+  #   data = fig_data %>% filter(date_wp == "2022-09-15", variable == "water_potential",
+  #        analysis == "dcwc_alldata"),
+  #   aes(label = paste("R-squared:", round(r_squared, 3))),
+  #   x = -Inf, y = -Inf, hjust = -0.1, vjust = -0.5, size = 4, color = "black",
+  #   inherit.aes = FALSE
+  # ) +
+   # Add "B" and "C" labels in the upper left of each facet
+  geom_text(
+    # data = fig_data %>% filter(date_wp == "2022-03-08", variable == "water_potential",
+    #      analysis == "dcwc_alldata"),
+    aes(label = "B"),
+    x = -Inf, y = Inf, hjust = -0.2, vjust = 1.5, size = 6, fontface = "bold",
+    inherit.aes = FALSE
+  ) +
+  # geom_text(
+  #   data = fig_data %>% filter(date_wp == "2022-09-15"),
+  #   aes(label = "C"),
+  #   x = -Inf, y = Inf, hjust = -0.2, vjust = 1.5, size = 6, fontface = "bold",
+  #   inherit.aes = FALSE
+  # ) +
+ # theme(legend.position = "bottom") +
+  theme(legend.position=c(.135,.90))
+dcwc_mpa_plot
+
+# Calculate R-squared values for each group
+r_squared_data <- fig_data1 %>%
+  filter(variable == "water_potential") %>%
+  group_by(time) %>%
+  summarise(
+    R_squared = round(summary(lm(value ~ slope))$r.squared, 3),
+    slope_mean = mean(slope, na.rm = TRUE),
+    value_max = max(value, na.rm = TRUE)
+  )
+
+# Add R-squared annotations to the plot
+dcwc_mpa_plot <- fig_data1 %>%
+  filter(variable == "water_potential") %>%
+  ggplot(aes(y = value, 
+             x = slope, 
+             shape = time,
+             color = time)) + 
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE, size = 0.5) +
+  labs(
+    y = "Mean Water Potential (Psi)", 
+    color = "Time",
+    shape = "Time",
+    x = "dCWC"
+  ) +
+  common_theme +
+  color_before_after +
+  geom_text(
+    data = r_squared_data,
+    aes(
+      label = paste("R²:", R_squared),
+      x = .002, 
+      y = value_max - .75 # Adjust for label placement
+    ),
+    inherit.aes = T,
+    size = 4,
+    fontface = "italic",
+    show.legend = FALSE  # Suppress legend for this layer
+  ) +
+  theme(legend.position = c(0.9, 0.15), 
+        legend.text = element_text(size = 13),
+        legend.title = element_text(size = 16),
+        ) +
+    geom_text(
+    # data = fig_data %>% filter(date_wp == "2022-03-08", variable == "water_potential",
+    #      analysis == "dcwc_alldata"),
+    aes(label = "D"),
+    x = -Inf, y = Inf, hjust = -0.2, vjust = 1.5, size = 6, fontface = "bold",
+    inherit.aes = FALSE
+  ) 
+
+# Combine plots with final layout
+final_plot <- dcwc_plot/ dcwc_mpa_plot + 
+  plot_layout(heights = c(1, 2)) & 
+  theme(plot.margin = unit(c(0.05, 0.15, 0.001, 0.05), "cm"))
+
+# Display final plot
+print(final_plot)
+
+# Save plot
+ggsave(here::here("figures", "qudo figures", "dcwc_combinespp_SI.jpg"), plot = final_plot, width = 6.5, height = 8)
 ```

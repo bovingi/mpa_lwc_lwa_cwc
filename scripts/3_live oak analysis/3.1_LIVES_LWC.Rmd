@@ -1273,6 +1273,7 @@ ggsave(here::here("figures", "quag figures", "LWC", "nice_time"), time, device =
 ```
 
 ###Models: 
+
 ####All time
 
 ```{r}
@@ -1351,6 +1352,29 @@ ggsave(here::here("figures", "quag figures", "LWC", "time_summary_slopes_boot_tr
 ```
 
 #MODELS:
+
+Add LMA model to see if just using phenology or LMA is better than using water related term. 
+```{r}
+
+data_quag_lma <- data_quag_raw %>% 
+ # filter(time %in% c("md")) %>% 
+  group_by(tree, week, time) %>% 
+  mutate(lma_g_cm2 = mean(lma_g_cm2, na.rm = T)) %>% 
+  filter(species %in% c("live oak")) %>% 
+  select(week, tree, species, lma_g_cm2, water_potential)
+
+lma_mod <- lmer(water_potential ~ lma_g_cm2 + (lma_g_cm2|week) , data = data_quag_lma, REML = T)
+lma_mod
+
+broom.mixed::glance(lma_mod)
+r.squaredGLMM(lma_mod) 
+
+lma_mod_time <- lmer(water_potential ~ lma_g_cm2*time_season + (1|week) + (lma_g_cm2|tree), data = data_quag_raw)
+lma_mod_time
+
+broom.mixed::glance(lma_mod_time)
+r.squaredGLMM(lma_mod_time) 
+```
 
 glanced mods
 

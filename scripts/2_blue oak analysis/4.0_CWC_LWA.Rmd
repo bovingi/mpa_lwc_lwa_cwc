@@ -618,7 +618,7 @@ time_summary <- final_df_all_cwc_lwa %>%
             
           )) %>% 
 ggplot(aes(color = time_season)) + 
-  geom_point(aes(y = slope, x = time_season), size =3) +
+  geom_point(aes(y = mean, x = time_season), size =3) +
   geom_point(aes(y = upr, x = time_season), size = 1) +
   geom_point(aes(y = lwr, x = time_season), size = 1) +
   geom_segment(aes(y= lwr, 

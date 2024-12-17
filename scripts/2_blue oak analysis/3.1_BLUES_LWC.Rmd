@@ -20,6 +20,26 @@ library(emmeans) #for tukey of model
 library(lmerTest)
 library(here)
 #utils::install.packages("lme4", type = "source")
+
+library(data.table)
+library(janitor)
+library(here)
+library(tidyverse)
+library(lubridate)
+library(readxl)
+library(gridExtra)
+#library(calecopal)
+library(rstatix)
+library(vars)
+library(MuMIn)
+library(lme4) #for mixed effects models
+library(arm)
+library(nlme)
+select = dplyr::select
+
+
+datver <- "20230724"
+dataversion <- paste0("Data_", datver)
 ```
 #-------
 #DATA: 
@@ -854,32 +874,6 @@ final_df_all <- read_csv(here::here("processed-data", "bootstrapped_df_qudo_lwc_
 
 #*ANALYSIS*: 
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
-#install.packages("")
-#devtools::install_github("an-bui/calecopal")
-
-library(data.table)
-library(janitor)
-library(here)
-library(tidyverse)
-library(lubridate)
-library(readxl)
-library(gridExtra)
-#library(calecopal)
-library(rstatix)
-library(vars)
-library(MuMIn)
-library(lme4) #for mixed effects models
-library(arm)
-library(nlme)
-select = dplyr::select
-
-source(here::here("scripts", "scripts_functions", "figure_info.R"))
-
-#datver <- "20230724"
-dataversion <- paste0("Data_", datver)
-```
 
 #Data wrangling: 
 
@@ -1248,7 +1242,8 @@ Do we need to include site here?
 ```{r}
 space_df_nosite <- wc_qudo_df %>% 
   drop_na(site) %>% 
-  mutate(week = as.factor(week))
+  mutate(week = as.factor(week)) %>% 
+  filter(time == "md")
 
 space_mod1 <- lmer(water_potential ~ lwc_mean + (lwc_mean|week), data = space_df_nosite, REML = T)
 #summary(space_mod)
@@ -1565,11 +1560,36 @@ ggsave(here("figures", "qudo figures", "LWC", "time_summary_slopes_boot_tree"), 
 
 #MODELS:
 
+Add LMA model to see if just using phenology or LMA is better than using water related term. 
+```{r}
+data_qudo_lma <- data_qudo_raw %>% 
+ # filter(time %in% c("md")) %>% 
+  group_by(tree, week, time) %>% 
+  mutate(lma_g_cm2 = mean(lma_g_cm2, na.rm = T)) %>% 
+  filter(species %in% c("blue oak")) %>% 
+  filter(time == "md") %>% 
+  select(week, tree, species, lma_g_cm2, water_potential)
+
+lma_mod <- lmer(water_potential ~ lma_g_cm2 + (lma_g_cm2|week) , data = data_qudo_lma, REML = T)
+lma_mod
+
+broom.mixed::glance(lma_mod)
+r.squaredGLMM(lma_mod) 
+
+lma_mod_time <- lmer(water_potential ~ lma_g_cm2*time_season + (1|week) + (lma_g_cm2|tree), data = data_qudo_raw)
+lma_mod_time
+
+broom.mixed::glance(lma_mod_time)
+r.squaredGLMM(lma_mod_time) 
+```
+
 glanced mods
 
 ```{r}
 glance_df <- bind_rows(space_glance <- broom.mixed::glance(space_mod1) 
                        %>% mutate(mod = "space"),
+                       lma_space_glance <- broom.mixed::glance(lma_mod) 
+                       %>% mutate(mod = "lma_space"),
                        hyd_glance <-  broom.mixed::glance(m_wk_rand) 
                        %>% mutate(mod = "hyd"),
                        time_glance <- broom.mixed::glance(time_season_mod_int)
@@ -1580,10 +1600,16 @@ glance_df <- bind_rows(space_glance <- broom.mixed::glance(space_mod1)
                        %>% mutate(mod = "space"),
                        as_data_frame(r.squaredGLMM(m_wk_rand)) 
                        %>% mutate(mod = "hyd"),
-                       as_data_frame(r.squaredGLMM(time_season_mod)) 
+                    as_data_frame(r.squaredGLMM(time_season_mod)) 
                        %>% mutate(mod = "time"),
                        as_data_frame(r.squaredGLMM(time_season_mod_int)) 
-                       %>% mutate(mod = "interaction")
+                       %>% mutate(mod = "interaction"),
+                    lma_time_glance <- broom.mixed::glance(lma_mod_time) 
+                       %>% mutate(mod = "lma_time_interaction"),
+                    as_data_frame(r.squaredGLMM(lma_mod_time)) 
+                       %>% mutate(mod = "lma_time_interaction"),
+                    as_data_frame(r.squaredGLMM(time_season_mod)) 
+                       %>% mutate(mod = "lma_space")
                        ) %>% 
   group_by(mod) %>% 
   fill(c(R2m, R2c), .direction = "downup") %>% 

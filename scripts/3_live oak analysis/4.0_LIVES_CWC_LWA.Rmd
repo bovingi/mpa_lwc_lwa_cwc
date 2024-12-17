@@ -448,7 +448,7 @@ cwc_time_boot_df <- cwc_time_boot_df %>%
          time_season = pre_post)
 
 final_df_all_cwc <- bind_rows(cwc_final_df_space, cwc_time_boot_df) %>% 
-  mutate(slope = mean_slope, 
+  mutate(slope = mean, 
          lwr = lower_bound, 
          upr = upper_bound) 
 

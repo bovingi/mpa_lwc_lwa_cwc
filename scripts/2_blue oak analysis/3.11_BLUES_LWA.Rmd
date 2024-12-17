@@ -18,7 +18,9 @@ library(boot)
 source(here::here("scripts", "scripts_functions", "figure_info.R"))
 library(lme4)
 library(MuMIn) #for r.squaredGLMM fxn
-
+select = dplyr::select
+datver <- "20230724"
+here = here::here
 version
 ```
 
@@ -55,6 +57,40 @@ data_og_lwa <- data_qudo_raw %>%
 ```
 
 #TIME, from ChatGPT:
+```{r}
+data_all <- data_og_lwa %>% 
+  filter(time == "md") 
+
+# Filter for trees measured "before leafout"
+before_leafout_data <- data_all %>%
+  filter(time_season == "before leafout")
+
+# Filter for trees measured "after leafout"
+after_leafout_data <- data_all %>%
+  filter(time_season == "after leafout")
+
+# Find the common set of trees that appear in both datasets
+common_trees <- intersect(before_leafout_data$tree, after_leafout_data$tree)
+
+# Filter the original dataset to include only the common trees
+common_trees_data <- data_all %>%
+  filter(tree %in% common_trees)
+
+# Assuming you have the 'common_trees_data' dataframe
+
+# Get the unique tree IDs in 'common_trees_data'
+unique_tree_ids <- unique(common_trees_data$tree)
+
+# Count the number of unique tree IDs
+num_unique_tree_ids <- length(unique_tree_ids)
+
+# Print the number of unique tree IDs
+cat("Number of unique tree IDs in common_trees_data:", num_unique_tree_ids, "\n")
+
+# Filter the original dataset to include only the common tree IDs
+filtered_data <- data_all[data_all$tree %in% common_trees, ] 
+```
+
 ```{r}
 library(dplyr)
 library(furrr)
@@ -176,6 +212,7 @@ data <- filtered_data  %>%
   filter(#time_season == "before leafout", 
          week %in% c(10:17)) %>% 
   distinct() %>% 
+  mutate(lwa_g_cm2 = lwa_g_cm2_new) %>% 
   drop_na(lwa_g_cm2) 
 
 num_unique_trees <- length(unique(data$tree))
@@ -788,7 +825,7 @@ library(tidyverse)
 library(lubridate)
 library(readxl)
 library(gridExtra)
-library(calecopal)
+#library(calecopal)
 library(rstatix)
 library(vars)
 library(MuMIn)
