@@ -9,7 +9,8 @@ library(sf)
 library(raster)
 library(leaflet)
 #library(spdplyr)
-library(rgdal)
+#install.packages("rgdal")
+#library(rgdal)
 library(leafsync)
 ```
 
@@ -160,7 +161,7 @@ latlon.ll <- SpatialPointsDataFrame(coords = data.frame(trees$longitude, trees$l
 #***End of season PDs (for fig. 1)
 ```{r}
 pds <- latlon.ll@data  %>% 
-  filter(week %in% c(29:37), 
+  filter(week %in% c(29:40), 
         # species == "blue oak"
          ) %>% 
   group_by(tree) %>% 
