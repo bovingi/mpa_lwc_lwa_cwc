@@ -542,6 +542,81 @@ lma_swc_plot <- grid.arrange(arrangeGrob(lma_plot,
 ggsave(here("figures", "qudo figures", "lma_long_plot"), lma_swc_plot, device = "jpeg", width = 12, height = 1.75, dpi = 300)
 ```
 
+```{r}
+lma_plot_df <- read_csv(here("processed-data", paste0("wp_wc_rwc_", datver, ".csv"))) %>% 
+  select(mean_swc_per_dry_g, lma_g_cm2, species, week, week_alas_link) %>% 
+  drop_na(mean_swc_per_dry_g)
+
+# Calculate means and variation (standard deviation or standard error)
+lma_plot_summary <- lma_plot_df %>%
+  mutate(week_alas_link = case_when(
+    week_alas_link %in% c(11) ~ 10, 
+    week_alas_link %in% c(13) ~ 14, 
+    TRUE ~ as.numeric(week_alas_link)
+  )) %>%
+  group_by(week_alas_link, species) %>%
+  summarise(
+    mean_lma = mean(lma_g_cm2, na.rm = TRUE),
+    sd_lma = sd(lma_g_cm2, na.rm = TRUE),
+    mean_swc = mean(mean_swc_per_dry_g, na.rm = TRUE),
+    sd_swc = sd(mean_swc_per_dry_g, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    se_lma = sd_lma / sqrt(n()),
+    se_swc = sd_swc / sqrt(n())
+  ) %>%
+  filter(species %in% c("blue oak"))
+
+# Plot with error bars
+lma_plot <- lma_plot_summary %>% 
+  ggplot() +
+  geom_line(aes(x = week_alas_link, y = mean_lma * 80)) +
+  geom_errorbar(aes(
+    x = week_alas_link,
+    ymin = (mean_lma - sd_lma) * 80,
+    ymax = (mean_lma + sd_lma) * 80
+  ), width = 0, color = "black") +
+   geom_errorbar(aes(
+    x = week_alas_link,
+    ymin = mean_swc - sd_swc,
+    ymax = mean_swc + sd_swc
+  ), width = 0, color = "darkgrey") +
+  geom_point(aes(x = week_alas_link, y = mean_swc), shape = 17, size = 3, color = "darkgrey") +
+    geom_point(aes(x = week_alas_link, y = mean_lma * 80), size = 3) +
+  geom_line(aes(x = week_alas_link, y = mean_swc), color = "darkgrey") +
+ 
+  labs(y = "LMA (g/cm2)") +
+  theme(
+    legend.position = "none",
+    axis.title.y = element_text(size = 20), 
+    axis.text.x = element_blank(),
+    axis.title.x = element_blank(), 
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank()
+  )
+
+# Add secondary axis label
+y.grob <- textGrob("SWC (g)", 
+                   gp = gpar(col = "#525252", fontsize = 20), 
+                   rot = 90)
+
+lma_swc_plot <- grid.arrange(
+  arrangeGrob(
+    lma_plot,
+    right = y.grob, 
+    heights = c(1, 0), 
+    widths = c(1.5, 0)
+  )
+)
+
+# Save plot
+ggsave(here("figures", "qudo figures", "lma_long_plot"), 
+       lma_swc_plot, device = "jpeg", 
+       width = 12, height = 1.75, dpi = 300)
+
+```
+
 ```{r, fig.height=2, fig.width=6}
 ##USE THIS ONE: 
 #lma_plot <- data_qudo_raw %>% 
