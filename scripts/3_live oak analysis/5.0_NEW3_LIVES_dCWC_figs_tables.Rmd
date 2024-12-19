@@ -1740,7 +1740,7 @@ sig_mods_all_sig
 
 ```
 
-#5.5. FIGURES: All mean_mpa ~ dCWC relationships:
+#5.5. **FIGURES: All mean_mpa ~ dCWC relationships:
 
 ```{r}
 fig_data <- merge(dcwc_allanalyses_new, # %>% select(-analysis), 
@@ -1785,9 +1785,9 @@ df <- fig_data %>%
          TRUE ~ as.character(variable))) %>% 
   #filter(!(variable_new == "LMA (g/cm2)")) %>% 
   mutate(analysis = case_when(
-    analysis %in% c("after") ~ "April 29-May 29",
-    analysis %in% c("before") ~ "March 8-April 12",
-    analysis %in% c("whole") ~ "March 8-May 29",
+    analysis %in% c("after") ~ "Apr. 29-May 29",
+    analysis %in% c("before") ~ "Mar. 8-Apr. 12",
+    analysis %in% c("whole") ~ "Mar. 8-May 29",
     analysis %in% c("just may") ~ "May 3-May 29",
     TRUE ~ as.character(analysis)
   )) %>% 
@@ -1797,7 +1797,12 @@ df <- fig_data %>%
   mutate(time = case_when(
     time %in% c("pd") ~ "Predawn",
     time %in% c("md") ~ "Midday",
-    ))
+    )) %>% 
+  mutate(time_means = case_when(
+    time_means %in% c("April 29-May 29") ~ "Late Spring",
+    time_means %in% c("March 8-April 12") ~ "Early Spring",
+    time_means %in% c("July-September") ~ "Summer",
+  ))
   
   
 
@@ -1846,7 +1851,9 @@ means_plot <- ggplot(df, aes(x = time,
     legend.position = "bottom",                      # Position the legend at the bottom
     legend.box = "vertical",                         # Stack the legends vertically
     legend.text = element_text(size = 10),           # Adjust legend text size
-    legend.title = element_text(size = 12)          # Adjust legend title size
+    legend.title = element_text(size = 12),          # Adjust legend title size
+    axis.text.y = element_text(size = 12)
+    
   ) +
   guides(
     color = guide_legend(order = 1),                 # Color legend on the top row
@@ -1855,7 +1862,7 @@ means_plot <- ggplot(df, aes(x = time,
   ggtitle("Q. agrifolia")
 means_plot
 
-ggsave(here::here("figures", "quag figures", "means_plot_SI.jpg"), plot = means_plot, width = 6.5, height = 8)
+ggsave(here::here("figures", "quag figures", "means_plot_SI.jpg"), plot = means_plot, width = 6, height = 8)
 ```
 
 

@@ -1740,9 +1740,134 @@ sig_mods_all_sig
 
 ```
 
-#5.5. FIGURES: All mean_mpa ~ dCWC relationships:
+#**5.5. FIGURES: All mean_mpa ~ dCWC relationships:
 
 ```{r}
+fig_data <- merge(dcwc_allanalyses_new, # %>% select(-analysis), 
+                  sig_mods_all, #%>% select(-slope_estimate), 
+                  by = c("time", "time_means", "analysis"), all.y = T) %>%
+ mutate(r_squared = round(R_squared, 3)) %>%
+   filter(!(variable == "lma_g_cm2" & time %in% c("pd"))) %>%
+   ungroup() %>%
+   distinct() %>%
+   dplyr::group_by(variable, time_means, time, analysis) %>%
+   mutate(count = n()) %>%
+   filter(count > 5)
+
+# fig_data %>%
+#   group_by(variable, date_wp, time) %>%
+#   count()
+
+# Step 1: Create variable_new column based on specified conditions
+df <- fig_data %>%
+  filter(!is.na(time)) %>% 
+  unite("variable_new", c(variable,time), remove = F) %>% 
+  #filter(!(analysis %in% c("before"))) %>% 
+  select(slope_estimate, analysis, p_value, variable_new, variable, time, time_means) %>% 
+  distinct() %>% 
+  filter(!(variable_new %in% c("water_potential_md") & slope_estimate < -0.005)) %>% 
+ # filter(!(variable_new %in% c("lwc_mean") & slope_estimate < -0.3)) %>% 
+#  filter(slope_estimate < 10) %>% 
+  # filter(!(date_wp %in% c("2022-03-23",
+  #                         "2022-03-30",
+  #                        "2022-04-06",
+  #                        "2022-04-13"
+  #                       # "2022-05-23",
+  #                       # "2022-07-19",
+  #                       # "2022-08-18",
+  #                       # "2022-09-15"
+  #                       ))) %>%
+  filter(!(analysis == "dcwc_beforeleafout")) %>% 
+  mutate(variable_new = case_when(variable %in% c("lma_g_cm2") ~ "LMA (g/cm2)", 
+                                  variable %in% c("lwa_g_cm2") ~ "LWarea (g/cm2)", 
+                                  variable %in% c("lwc_mean") ~ "LWmass (g)", 
+                                  variable  %in% c("water_potential") ~ "Water Potential (MPa)", 
+         TRUE ~ as.character(variable))) %>% 
+  #filter(!(variable_new == "LMA (g/cm2)")) %>% 
+  mutate(analysis = case_when(
+    analysis %in% c("after") ~ "Apr. 29-May 29",
+    analysis %in% c("before") ~ "Mar. 8-Apr. 12",
+    analysis %in% c("whole") ~ "Mar. 8-May 29",
+    analysis %in% c("just may") ~ "May 3-May 29",
+    TRUE ~ as.character(analysis)
+  )) %>% 
+  filter(!(analysis %in% c("May 3-May 29"))) %>% 
+  filter(!(time_means %in% c( "March 8-Sept 15", 
+                              "March 8-May 29")))%>% 
+  mutate(time = case_when(
+    time %in% c("pd") ~ "Predawn",
+    time %in% c("md") ~ "Midday",
+    )) %>% 
+  mutate(time_means = case_when(
+    time_means %in% c("April 29-May 29") ~ "Late Spring",
+    time_means %in% c("March 8-April 12") ~ "Early Spring",
+    time_means %in% c("July-September") ~ "Summer",
+  ))
+  
+  
+
+# Step 2: Plotting
+means_plot <- ggplot(df, aes(x = time, 
+               y = slope_estimate, 
+               shape = time_means,
+               color = analysis)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray") +
+  #geom_vline(xintercept = unique(df$date_wp), color = "gray90", linetype = "dotted") +
+  geom_jitter(aes(size = ifelse(p_value < 0.05, 3, 1)), 
+              position = position_jitter(width = .2, height = 0)
+              ) +
+  facet_wrap(~ variable_new, 
+    scales = "free", 
+       nrow = 4,
+    labeller = labeller(
+     .multi_line = T),
+   # labeller = label_wrap_gen(multi_line = F),
+  ) +
+  labs(x = "Analysis", 
+       y = "Metric~dCWC Slope", 
+       color = "dCWC Timeframe", 
+       shape = "Metric Timeframe") +
+  scale_size_identity() +  # Ensures that the size mapping from `ifelse` is used directly
+ # theme_minimal(base_size = 12) + 
+ # scale_x_date(date_labels = "%d %b %Y", breaks = unique(df$date_wp)) +
+  scale_color_manual(values = c("#c969a1", "#ffbb44", "#122451", "#8E9D68")) + 
+  labs(x = "")+
+  theme(
+    strip.text = element_text(size = 10, face = "bold"),
+   # axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = 0.5),
+    axis.title.x = element_text(), 
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    legend.position = "bottom",
+    strip.background = element_rect(fill = "white", color = "black"),
+    panel.spacing = unit(1, "lines"),
+    axis.text.x = element_blank(), # Hide x-axis text for all panels
+    axis.ticks.x = element_blank(), # Hide x-axis ticks for all panels
+    strip.text.x = element_text(face = "bold"),
+    axis.text.x.bottom = element_text(angle = 0, vjust = 0, hjust = 0, size = 10) # Show x-axis text only at the bottom
+    #axis.ticks.x.bottom = element_line() # Show x-axis ticks only at the bottom
+  ) +
+  theme(
+    legend.position = "bottom",                      # Position the legend at the bottom
+    legend.box = "vertical",                         # Stack the legends vertically
+    legend.text = element_text(size = 10),           # Adjust legend text size
+    legend.title = element_text(size = 12),          # Adjust legend title size
+    axis.text.y = element_text(size = 12)
+    
+  ) +
+  guides(
+    color = guide_legend(order = 1),                 # Color legend on the top row
+    shape = guide_legend(order = 2)                 # Shape legend on the bottom row
+  ) + 
+  ggtitle("Q. douglasii")
+means_plot
+
+ggsave(here::here("figures", "qudo figures", "means_plot_SI.jpg"), plot = means_plot, width = 6.5, height = 8)
+
+```
+
+
+```{r, eval = F}
 fig_data <- merge(dcwc_allanalyses_new, # %>% select(-analysis), 
                   sig_mods_all, #%>% select(-slope_estimate), 
                   by = c("time", "time_means", "analysis"), all.y = T) %>%
@@ -1857,6 +1982,8 @@ means_plot
 
 ggsave(here::here("figures", "qudo figures", "means_plot_SI.jpg"), plot = means_plot, width = 6.5, height = 8)
 ```
+
+
 ```{r}
 means_plot
 ```
