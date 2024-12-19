@@ -2108,10 +2108,11 @@ dcwc_plot <- filtered_data %>%
   labs(y = "CWC (g/cm2)", x = "Date") +
   common_theme +
   annotate("text", x = as.Date("2022-03-05"), y = 0.13, 
-            hjust = 1.5, vjust = 1, 
+            hjust = 1.25, vjust = 1, 
            label = "A", size = 6, fontface = "bold") +
   color_very_many +
-  theme(plot.margin = unit(c(0.5, 0.5, 0, 0.5), "cm")) +
+  theme(plot.margin = unit(c(0.5, 0.5, 0, 0.5), "cm"), 
+        plot.title = element_text(size = 20, face = "bold")) +
   ggtitle("Q. agrifolia")
 dcwc_plot
 

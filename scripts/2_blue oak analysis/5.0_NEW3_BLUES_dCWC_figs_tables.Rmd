@@ -1909,8 +1909,8 @@ dcwc_plot <- filtered_data %>%
     n() >= 2
   ) %>%
   ungroup() %>% 
-  mutate(date_wp = as.Date(date_wp)) %>%  # Explicit Date conversion
-  select(cwc, date_wp, tree) %>% 
+  mutate(date_new = as.Date(date_wp)) %>%  # Explicit Date conversion
+  select(cwc, date_new, tree) %>% 
   distinct() %>% 
   ggplot(aes(y = cwc, x = date_new, color = as.factor(tree))) + 
   geom_point() +
@@ -2113,7 +2113,8 @@ dcwc_plot <- filtered_data %>%
             hjust = 1.5, vjust = 1, 
            label = "B", size = 6, fontface = "bold") +
   color_very_many +
-  theme(plot.margin = unit(c(0.5, 0.5, 0, 0.5), "cm")) +
+  theme(plot.margin = unit(c(0.5, 0.5, 0, 0.5), "cm"), 
+        plot.title = element_text(size = 20, face = "bold")) +
   ggtitle("Q. douglassii")
 dcwc_plot
 
@@ -2231,7 +2232,7 @@ dcwc_mpa_plot <- fig_data1 %>%
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, size = 0.5) +
   labs(
-    y = "Mean Water Potential (Psi)", 
+    y = "Mean Water Potential (\U03A8)", 
     color = "Time",
     shape = "Time",
     x = "dCWC"
