@@ -287,7 +287,7 @@ cat("Number of unique trees in the dataset:", num_unique_trees, "\n")
 n_iterations <- 1000
 
 # Number of random trees to sample
-n_sample_trees <- 10  # Adjust as needed based on the number of unique trees
+n_sample_trees <- 41  # Adjust as needed based on the number of unique trees
 
 # Create an empty data frame to store bootstrapped slopes
 bootstrapped_slopes_df <- data.frame()
@@ -379,7 +379,7 @@ cat("Number of unique trees in the dataset:", num_unique_trees, "\n")
 n_iterations <- 1000
 
 # Number of random trees to sample
-n_sample_trees <- 10  # Adjust as needed
+n_sample_trees <- 41  # Adjust as needed
 
 # Create an empty data frame to store bootstrapped slopes
 bootstrapped_slopes_df <- data.frame()
@@ -682,11 +682,11 @@ final_df_all_cwc <- bind_rows(cwc_final_df_space, cwc_time_boot_df) %>%
          lwr = lower_bound, 
          upr = upper_bound) 
 
-final_df_all_cwc %>% write_csv(here::here("processed-data", "bootstrapped_df_cwc.csv"))
+final_df_all_cwc %>% write_csv(here::here("processed-data", "bootstrapped_df_qudo_cwc.csv"))
 ```
 
 ```{r}
-final_df_all_cwc <- read_csv(here::here("processed-data", "bootstrapped_df_cwc.csv"))
+final_df_all_cwc <- read_csv(here::here("processed-data", "bootstrapped_df_qudo_cwc.csv"))
 ```
 
 #------------
@@ -1967,7 +1967,7 @@ space_slope
 ```
 
 ####Space - BS
-```{r}
+```{r, eval = F}
 space_slope <-  final_df_all_cwc %>% 
    filter(!week %in% c(9)) %>% 
   filter(analysis == "space") %>% 
@@ -2273,7 +2273,7 @@ legend_scatterplots
 ```{r}
 library(grid)
 #labels of slopes: 
-y.grob1 <- textGrob("Slope", 
+y.grob1 <- textGrob("Slope (\U0394 \U03A8 / \U0394 CWC)",
                    gp=gpar(fontface="bold", #col="blue", 
                            fontsize=15), rot=90)
 

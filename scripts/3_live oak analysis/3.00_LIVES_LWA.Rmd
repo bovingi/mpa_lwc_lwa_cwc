@@ -3199,7 +3199,7 @@ legend_scatterplots
 ```{r}
 library(grid)
 #labels of slopes: 
-y.grob1 <- textGrob("Slope", 
+y.grob1 <- textGrob("Slope (\U0394 \U03A8 / \U0394 LWarea)",
                    gp=gpar(fontface="bold", #col="blue", 
                            fontsize=15), rot=90)
 

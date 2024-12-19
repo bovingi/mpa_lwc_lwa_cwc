@@ -904,7 +904,7 @@ legend_scatterplots
 ```{r}
 library(grid)
 #labels of slopes: 
-y.grob1 <- textGrob("Slope", 
+y.grob1 <- textGrob("Slope (\U0394 LWmass/ \U0394 CWC)",
                    gp=gpar(fontface="bold", #col="blue", 
                            fontsize=15), rot=90)
 
@@ -920,7 +920,7 @@ combined_slopes_wide <- cowplot::plot_grid(time_summary, NULL, space_slope,
                                   labels = c("C", "", "D"#,"", "G"
                                              ),
                                   label_x = .145,
-                                  hjust= c(0, 0, 0),
+                                  hjust= c(2.5, 0, 1.75),
                                   label_y = .98
                                   # rel_heights = c(.15, 1, .3), 
                                    #rel_widths = c(1, 1, 1), 
