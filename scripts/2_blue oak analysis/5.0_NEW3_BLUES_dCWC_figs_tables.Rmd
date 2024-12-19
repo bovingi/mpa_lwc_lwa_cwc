@@ -1912,7 +1912,7 @@ dcwc_plot <- filtered_data %>%
   mutate(date_wp = as.Date(date_wp)) %>%  # Explicit Date conversion
   select(cwc, date_wp, tree) %>% 
   distinct() %>% 
-  ggplot(aes(y = cwc, x = date_wp, color = as.factor(tree))) + 
+  ggplot(aes(y = cwc, x = date_new, color = as.factor(tree))) + 
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, size = 0.5) +
   labs(y = "CWC (g/cm2)", x = "Date") +
@@ -1921,7 +1921,9 @@ dcwc_plot <- filtered_data %>%
            label = "A", size = 6, fontface = "bold") +
   color_very_many +
   theme(plot.margin = unit(c(0.5, 0.5, 0, 0.5), "cm")) +
-  ggtitle("Q. douglasii")
+  ggtitle("Q. douglasii")  +
+  scale_x_date(breaks = unique(filtered_data$date_new), 
+               date_labels = "%Y-%m-%d")
 dcwc_plot
 ```
 

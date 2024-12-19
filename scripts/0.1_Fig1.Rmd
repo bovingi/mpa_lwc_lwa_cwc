@@ -67,15 +67,18 @@ wc_qudo_df%>%
 
 timeline_df <- wc_qudo_df %>% 
  # select(week, date_wp, time) %>% 
-  mutate(date_wp = as.character(date_wp)) %>% 
   mutate(date_new = case_when(
-    date_wp %in% c("2022-03-15") ~ "2022-03-08",
-    date_wp %in% c("2022-03-23") ~ "2022-03-25",
-    date_wp %in% c("2022-03-30","2022-04-06") ~ "2022-04-04",
-    date_wp %in% c("2022-04-13") ~ "2022-04-11",
-    date_wp %in% c("2022-04-27") ~ "2022-04-25",
-    date_wp %in% c("2022-05-04") ~ "2022-05-09",
-    date_wp %in% c("2022-05-23") ~ "2022-05-25",
+    date_wp %in% c("2022-03-08") ~ "2022-03-08",#CWC also measured on March 15th, keep
+    date_wp %in% c("2022-03-15") ~ "2022-03-16", #overflight on 3/16
+    date_wp %in% c("2022-03-23", "2022-03-25") ~ "2022-03-22", #ok to combine these, CWC only measured on March 222, some MPas on March 23
+    date_wp %in% c("2022-03-30","2022-04-06","2022-04-04") ~ "2022-04-05", #CWC also measured on April 06, just use 04-04
+    date_wp %in% c("2022-04-13", "2022-04-11") ~ "2022-04-12", #CWC also measred on April 11, just keep 
+    date_wp %in% c("2022-04-20") ~ "2022-04-20", #
+    date_wp %in% c("2022-04-27", "2022-04-25") ~ "2022-04-29", #
+    date_wp %in% c("2022-05-04") ~ "2022-05-03",
+    date_wp %in% c("2022-05-09") ~ "2022-05-11",
+    date_wp %in% c("2022-05-09") ~ "2022-05-17", #might not have MPas?
+    date_wp %in% c("2022-05-23", "2022-05-25") ~ "2022-05-29",
     TRUE ~ as.character(date_wp)
   )) %>% 
   mutate(date_new = ymd(date_new)) %>% 
@@ -92,7 +95,7 @@ timeline_plot <- timeline_df %>%
   geom_hline(yintercept = 0) +
   geom_point(size = 10) +
     geom_point(data= timeline_df %>% 
-               filter(week %in% c(10, 12, 14,15, 17, 18, 19, 21, 37)), 
+               filter(week %in% c(10, 11, 12, 14,15, 17, 18, 19, 21, 37)), 
            pch=21, 
            size=10, 
            stroke=2,
@@ -106,16 +109,18 @@ timeline_plot <- timeline_df %>%
         axis.ticks = element_blank(), 
         axis.text.x = element_text(angle = 60, vjust = 0.5, hjust=.5, size= 20)
         ) +
-scale_x_date(date_labels = '%b. %d',
-             breaks = as.Date(c("2022-03-08",#"2022-03-15", 
-                                "2022-03-25", 
-                                #"2022-03-23", "2022-03-30", 
-                                "2022-04-04", #"2022-04-06","2022-04-13", 
-                                "2022-04-11", #"2022-04-27", 
-                                "2022-04-25", #"2022-05-04" ,
-                                "2022-05-09", "2022-05-23", 
-                                #"2022-05-23", 
-                                "2022-07-19", "2022-08-18","2022-09-15")))
+# scale_x_date(date_labels = '%b. %d',
+#              breaks = as.Date(c("2022-03-08",#"2022-03-15", 
+#                                 "2022-03-25", 
+#                                 #"2022-03-23", "2022-03-30", 
+#                                 "2022-04-04", #"2022-04-06","2022-04-13", 
+#                                 "2022-04-11", #"2022-04-27", 
+#                                 "2022-04-25", #"2022-05-04" ,
+#                                 "2022-05-09", "2022-05-23", 
+#                                 #"2022-05-23", 
+#                                 "2022-07-19", "2022-08-18","2022-09-15")))  +
+  scale_x_date(breaks = unique(timeline_df$date_new), 
+               date_labels = '%b. %d')
 timeline_plot
 
 ggsave(here("figures", "timeline_plot"), timeline_plot, device = "jpg", width = 12, height = 2, dpi = 300)
@@ -247,4 +252,54 @@ ggplot() +
 scale_x_date(date_labels = '%b. %d', 
              breaks = as.Date(data_og_cwc1$date_new))
 ```
+#PHENOLOGY: 
+
+```{r}
+data_qudo_raw <- read_csv(here::here("processed-data", paste0("analysis",datver,".csv")), show_col_types = FALSE) %>% 
+ # filter(species == "live oak") %>% 
+  distinct() %>% 
+ # group_by(week, time) %>% 
+ # filter(n() >= 10) %>% #only run on weeks where we have a decent number of samples
+#  ungroup() %>% 
+#  filter(!week == 21) %>% #this week doesn't have very many samples,
+  mutate(time_season = case_when(
+    week  <= 17 ~ "before leafout", 
+    week > 17 ~ "after leafout", 
+    TRUE ~ as.character("none")
+  )) %>% 
+    mutate(week = case_when(
+    date_wp %in% c("2022-03-15") ~ 11, 
+    TRUE ~ as.numeric(week)
+  )) %>% 
+  select(-plot) %>% 
+  distinct() %>% 
+  filter(!(week == 19 & time == "pd" & water_potential < -2)) 
+
+data_qudo_raw %>% 
+  ggplot(aes(y = alas_cm2_per_mm2, 
+             x = date_wp)) +
+  geom_point()  +
+  scale_x_date(breaks = unique(data_qudo_raw$date_wp), 
+               date_labels = "%Y-%m-%d") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+data_qudo_raw %>% 
+  ggplot(aes(y = lma_g_cm2, 
+             x = date_wp)) +
+  geom_jitter()  +
+  scale_x_date(breaks = unique(data_qudo_raw$date_wp), 
+               date_labels = "%Y-%m-%d") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+data_qudo_raw %>% 
+  ggplot(aes(y = lwa_g_cm2, 
+             x = date_wp)) +
+  geom_jitter()  +
+  scale_x_date(breaks = unique(data_qudo_raw$date_wp), 
+               date_labels = "%Y-%m-%d") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+
 
