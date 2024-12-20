@@ -329,14 +329,17 @@ data_qudo_raw %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
-data_qudo_raw %>% 
-  ggplot(aes(y = lwa_g_cm2, 
+fig <- data_qudo_raw %>% 
+  ggplot(aes(y = alas_cm2_per_mm2, 
              x = date_wp)) +
-  geom_jitter()  +
+  geom_point()  +
   scale_x_date(breaks = unique(data_qudo_raw$date_wp), 
                date_labels = "%Y-%m-%d") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(y = "Al:As (cm2/cm2)")
 
+fig
+ggsave(here("figures", "qudo figures", "alas_long_plot"), fig, device = "jpeg", width = 8, height = 5, dpi = 300)
 ```
 
 #Phenology timelines
@@ -481,6 +484,8 @@ ggsave(here("figures", "figures", "Fig 5", "lma_both_spp"), lma_swc_plot, device
 lma_plot_df <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv")))  %>% 
     select(mean_swc_per_dry_g, lma_g_cm2, species, week, week_alas_link) %>% 
   drop_na(mean_swc_per_dry_g)
+
+unique(lma_plot_df$week)
 
 lma_plot <- lma_plot_df  %>% 
   mutate(week_alas_link = case_when(
