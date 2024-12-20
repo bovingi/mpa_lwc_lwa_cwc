@@ -736,11 +736,11 @@ data <- wc_qudo_df %>%
   filter(all(c("pd", "md") %in% time)) %>%
   ungroup() %>% 
   distinct() %>% 
-  filter(!(week == 17 & tree %in% c(2010, 2379))) %>% 
-  filter(!(week == 15 & tree %in% c(2009))) %>% 
-  filter(!(week == 33 & tree %in% c(2379, 2378)))%>% 
-  filter(!(week == 29 & tree %in% c(2006, 2086))) #%>% 
- # filter(!(week == 19)) #something weird is up with week 19!
+ filter(!(week == 17 & tree %in% c(2010, 2379))) %>%
+ filter(!(week == 15 & tree %in% c(2009))) %>%
+ filter(!(week == 33 & tree %in% c(2379, 2378)))%>%
+ filter(!(week == 29 & tree %in% c(2006, 2086))) #%>%
+ #filter(!(week == 19)) ##something weird is up with week 19!
 
 # Assuming your dataset is called 'data'
 # Make sure 'data' is properly loaded before proceeding
@@ -1268,7 +1268,7 @@ space_mod_df <- broom.mixed::glance(space_mod1)
 
 ```
 
-Which weeks are significant?
+###Which weeks are significant?
 
 ```{r}
 #week 10: 
@@ -1363,7 +1363,7 @@ wk <- wc_qudo_df %>%
 
 space_mod <- lmer(water_potential ~ lwc_mean  + (1|site), data =  wk,  REML = T)
 summary(space_mod)
-#not sig
+#p < 0.05
 ```
 YES
 
@@ -1650,8 +1650,6 @@ library(cowplot)
 library(grid)
 library(gridExtra)
 ```
-
-#Data: 
 
 #Scatterplots:
 
@@ -2407,7 +2405,7 @@ combined_slopes_wide <- cowplot::plot_grid(hyd_slopes , NULL, time_summary, NULL
                                   labels = c("D", "", "E", "", "F"#,"", "G"
                                              ),
                                   label_x = .2,
-                                  hjust= c(3, 0, 3, 0, 4),
+                                  hjust= c(3, 0, 3, 0, 3),
                                   label_y = .98
                                   # rel_heights = c(.15, 1, .3), 
                                    #rel_widths = c(1, 1, 1), 

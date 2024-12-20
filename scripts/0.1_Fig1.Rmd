@@ -52,6 +52,18 @@ sample_sizes %>%
   write_csv(here("figures", "sample_size.csv"))
 ```
 
+```{r}
+df <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
+  select(species, week, date_wp, time, tree) %>% 
+  distinct()
+
+df %>% 
+  group_by(species, week, date_wp, time) %>% 
+  summarise(n = n()) %>% 
+  pivot_wider(names_from = c("species"), values_from = c("n")) 
+```
+
+
 #TIMELINE: 
 ```{r, fig.height=5, fig.width=6}
 wc_qudo_df <- read_csv(here::here("processed-data", paste0("analysis",datver,".csv")), show_col_types = FALSE) %>% 
