@@ -2211,6 +2211,8 @@ print(final_plot)
 ggsave(here::here("figures", "qudo figures", "dcwc_SI.jpg"), plot = final_plot, width = 8, height = 8)
 ```
 
+#TO COMBINE: 
+
 ```{r, fig.height=7, fig.width=7}
 # Plot 1: dcwc_plot
 dcwc_plot <- filtered_data %>% 
@@ -2307,35 +2309,11 @@ dcwc_mpa_plot <- fig_data1 %>%
   ) +
   common_theme +
   color_before_after +
-  #Add R-squared annotations for each facet separately
-  # geom_text(
-  #  data = fig_data1 %>% filter((analysis %in% c("March 8-May 29"))) %>% filter((time_means %in% c("March 8-May 29"))),
-  #   aes(label = paste("R-squared:", round(r_squared, 3))),
-  #   x = -Inf, y = -Inf, hjust = -0.1, vjust = -0.5, size = 4, color = time,
-  #   inherit.aes = FALSE
-  # ) +
-  # geom_text(
-  #   data = fig_data %>% filter(date_wp == "2022-09-15", variable == "water_potential",
-  #        analysis == "dcwc_alldata"),
-  #   aes(label = paste("R-squared:", round(r_squared, 3))),
-  #   x = -Inf, y = -Inf, hjust = -0.1, vjust = -0.5, size = 4, color = "black",
-  #   inherit.aes = FALSE
-  # ) +
-   # Add "B" and "C" labels in the upper left of each facet
   geom_text(
-    # data = fig_data %>% filter(date_wp == "2022-03-08", variable == "water_potential",
-    #      analysis == "dcwc_alldata"),
     aes(label = "B"),
     x = -Inf, y = Inf, hjust = -0.2, vjust = 1.5, size = 6, fontface = "bold",
     inherit.aes = FALSE
   ) +
-  # geom_text(
-  #   data = fig_data %>% filter(date_wp == "2022-09-15"),
-  #   aes(label = "C"),
-  #   x = -Inf, y = Inf, hjust = -0.2, vjust = 1.5, size = 6, fontface = "bold",
-  #   inherit.aes = FALSE
-  # ) +
- # theme(legend.position = "bottom") +
   theme(legend.position=c(.135,.90))
 dcwc_mpa_plot
 
@@ -2381,6 +2359,7 @@ dcwc_mpa_plot <- fig_data1 %>%
   theme(legend.position = c(0.9, 0.15), 
         legend.text = element_text(size = 13),
         legend.title = element_text(size = 16),
+        axis.text = element_text(size = 13)
         ) +
     geom_text(
     # data = fig_data %>% filter(date_wp == "2022-03-08", variable == "water_potential",

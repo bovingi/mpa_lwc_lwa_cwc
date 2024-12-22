@@ -2167,7 +2167,6 @@ fig_data1 <- merge(dcwc_allanalyses_new %>%
   #select(slope, water_potential, time, date_wp, analysis, r_squared) %>%
 
 
-
 dcwc_mpa_plot <- fig_data1 %>% 
   filter(variable %in% c("water_potential")) %>% 
   ggplot(aes(y = value, 
@@ -2185,35 +2184,11 @@ dcwc_mpa_plot <- fig_data1 %>%
   ) +
   common_theme +
   color_before_after +
-  #Add R-squared annotations for each facet separately
-  # geom_text(
-  #  data = fig_data1 %>% filter((analysis %in% c("March 8-May 29"))) %>% filter((time_means %in% c("March 8-May 29"))),
-  #   aes(label = paste("R-squared:", round(r_squared, 3))),
-  #   x = -Inf, y = -Inf, hjust = -0.1, vjust = -0.5, size = 4, color = time,
-  #   inherit.aes = FALSE
-  # ) +
-  # geom_text(
-  #   data = fig_data %>% filter(date_wp == "2022-09-15", variable == "water_potential",
-  #        analysis == "dcwc_alldata"),
-  #   aes(label = paste("R-squared:", round(r_squared, 3))),
-  #   x = -Inf, y = -Inf, hjust = -0.1, vjust = -0.5, size = 4, color = "black",
-  #   inherit.aes = FALSE
-  # ) +
-   # Add "B" and "C" labels in the upper left of each facet
   geom_text(
-    # data = fig_data %>% filter(date_wp == "2022-03-08", variable == "water_potential",
-    #      analysis == "dcwc_alldata"),
-    aes(label = "C"),
+    aes(label = "B"),
     x = -Inf, y = Inf, hjust = -0.2, vjust = 1.5, size = 6, fontface = "bold",
     inherit.aes = FALSE
   ) +
-  # geom_text(
-  #   data = fig_data %>% filter(date_wp == "2022-09-15"),
-  #   aes(label = "C"),
-  #   x = -Inf, y = Inf, hjust = -0.2, vjust = 1.5, size = 6, fontface = "bold",
-  #   inherit.aes = FALSE
-  # ) +
- # theme(legend.position = "bottom") +
   theme(legend.position=c(.135,.90))
 dcwc_mpa_plot
 
@@ -2237,7 +2212,7 @@ dcwc_mpa_plot <- fig_data1 %>%
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, size = 0.5) +
   labs(
-    y = "Mean Water Potential (Psi)", 
+    y = "Mean Water Potential (\U03A8)", 
     color = "Time",
     shape = "Time",
     x = "dCWC"
@@ -2256,10 +2231,10 @@ dcwc_mpa_plot <- fig_data1 %>%
     fontface = "italic",
     show.legend = FALSE  # Suppress legend for this layer
   ) +
-  theme(#legend.position = c(0.9, 0.15), 
-        legend.position = "none",
+  theme(legend.position = "none", 
         legend.text = element_text(size = 13),
         legend.title = element_text(size = 16),
+        axis.text = element_text(size = 13)
         ) +
     geom_text(
     # data = fig_data %>% filter(date_wp == "2022-03-08", variable == "water_potential",

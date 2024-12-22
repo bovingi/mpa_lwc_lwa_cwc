@@ -637,6 +637,70 @@ space_slope
 ```
 ####Space - BS
 ```{r}
+space_slope_bs <- final_df_all_cwc %>% 
+  mutate(week = case_when(
+    week %in% c(10) ~ "2022-03-08",
+    week %in% c(11) ~ "2022-03-15", 
+    week %in% c(12) ~ "2022-03-25",
+    week %in% c(14) ~ "2022-04-04",
+    week %in% c(15) ~ "2022-04-11",
+    week %in% c(17) ~ "2022-04-25", 
+    week %in% c(19) ~ "2022-05-09",
+    week %in% c(21) ~ "2022-05-23",
+    week %in% c(29) ~ "2022-07-19",
+    week %in% c(33) ~ "2022-08-18",
+    week %in% c(37) ~ "2022-09-15")) %>%  
+   filter(!week %in% c(9)) %>% 
+  filter(analysis == "space") %>% 
+  mutate(week = format(as.Date(week), "%m-%d"),
+         bounds_overlap_zero = (lwr <= 0 & upr >= 0)) %>%  # Check if bounds overlap 0
+  filter(analysis == "space") %>% 
+  ggplot(aes(color = as.factor(week))) + 
+  geom_point(aes(y = slope, x = as.factor(week), shape = bounds_overlap_zero), size = 3) +  # Shape depends on overlap
+  geom_point(aes(y = upr, x = as.factor(week)), size = 1) +
+  geom_point(aes(y = lwr, x = as.factor(week)), size = 1) +
+  geom_segment(aes(y = lwr, yend = upr, x = as.factor(week), xend = as.factor(week))) +
+  labs(
+    x = "Week", 
+    color = "Week", 
+    y = "Slope"
+  ) +
+  theme(
+    legend.position = "none",
+    strip.background = element_blank(),
+    strip.text.x = element_text(size = 12),
+    plot.title = element_text(size = 13),
+    axis.title = element_blank(),
+    axis.text = element_text(size = 12),
+    legend.key = element_blank(), 
+    legend.text = element_text(size = 13), 
+    legend.title = element_blank(),
+    legend.margin = margin(0, 0, 0, 0),
+    legend.box.margin = margin(-5, -8, -8, -8),
+    plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt"),
+    axis.text.x = element_text(angle = 90, vjust = 0.5, hjust = .25)
+  ) +
+  geom_hline(yintercept = 0, linetype = "dotted") + 
+  scale_color_manual(values = c(
+    "03-08" = "#48578E", 
+    "03-15" = "#48578E", 
+    "03-25" = "#165E6F", 
+    "04-04" = "#B6D0E2", 
+    "04-11" = "#729684", 
+    "04-25" = "#8E9D30", 
+    "05-09" = "#D9C000", 
+    "05-23" = "#EC7E28", 
+    "07-19" = "#CC5210", 
+    "08-18" = "#E97B6E", 
+    "09-15" = "#CC5265"
+  )) +
+  scale_shape_manual(values = c(`TRUE` = 1, `FALSE` = 16))  # Open circle for TRUE, closed for FALSE
+
+space_slope_bs
+```
+
+
+```{r, eval = F}
 space_slope_bs <-  final_df_all_cwc_lwc %>%  
   mutate(week = case_when(
         week %in% c(10) ~ "2022-03-08",
@@ -993,7 +1057,7 @@ x.grob1 <- textGrob("Time",
                    gp=gpar(fontface="bold", #col="blue", 
                            fontsize=15))
 
-combined_slopes_wide <- cowplot::plot_grid(time_summary, NULL, space_slope, 
+combined_slopes_wide <- cowplot::plot_grid(time_summary, NULL, space_slope_bs, 
                                            # NULL, pv_slope,
                                    nrow = 1, 
                                   rel_widths = c(1, -.005, 1  #, -.02, .5
@@ -1064,7 +1128,7 @@ combined_plots_all_legend <- grid.arrange(arrangeGrob(combined_plots_all,
                                 widths = c(1, .02)))
 combined_plots_all_legend
 
-ggsave(here("figures", "quag figures", "CWC", "combined_plots_lwc_quag"), combined_plots_all_legend, device = "jpg", width = 10, height = 7, dpi = 300)
+ggsave(here("figures", "quag figures", "CWC", "combined_plots_lwc_quag_bs"), combined_plots_all_legend, device = "jpg", width = 10, height = 7, dpi = 300)
 ```
 
 

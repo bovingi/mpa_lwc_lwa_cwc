@@ -341,6 +341,57 @@ fig <- data_qudo_raw %>%
 fig
 ggsave(here("figures", "qudo figures", "alas_long_plot"), fig, device = "jpeg", width = 8, height = 5, dpi = 300)
 ```
+```{r}
+lma_plot_df <- read_csv(here::here("processed-data", paste0("analysis",datver,".csv")), show_col_types = FALSE)  %>% 
+  select(alas_cm2_per_mm2, species, week, week_alas_link, swc_per_dry_g_mean, date_wp) %>% 
+  rename(mean_swc_per_dry_g = swc_per_dry_g_mean) 
+
+# Calculate means and variation (standard deviation or standard error)
+lma_plot_summary <- lma_plot_df %>%
+  mutate(week_alas_link = case_when(
+    week_alas_link %in% c(11) ~ 10, 
+    week_alas_link %in% c(13) ~ 14, 
+    TRUE ~ as.numeric(week_alas_link)
+  )) %>% 
+  mutate(date_wp = case_when(
+    date_wp %in% c("2022-03-15") ~ as.Date("2022-03-08"), 
+    date_wp %in% c("2022-04-06") ~ as.Date("2022-04-04"), 
+    date_wp %in% c("2022-04-13") ~ as.Date("2022-04-11"), 
+    TRUE ~ as.Date(date_wp)
+  ))%>%
+  group_by(species, date_wp) %>%
+  summarise(
+    mean_lma = mean(alas_cm2_per_mm2, na.rm = TRUE),
+    sd_lma = sd(alas_cm2_per_mm2, na.rm = TRUE),
+    mean_swc = mean(mean_swc_per_dry_g, na.rm = TRUE),
+    sd_swc = sd(mean_swc_per_dry_g, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  mutate(
+    se_lma = sd_lma / sqrt(n()),
+    se_swc = sd_swc / sqrt(n())
+  ) %>%
+  filter(species %in% c("blue oak")) %>% 
+  mutate(date_wp = as.Date(date_wp)) 
+
+# Plot with error bars
+lma_plot <- lma_plot_summary %>% 
+  ggplot() +
+  geom_line(aes(x = date_wp, y = mean_lma)) +
+  geom_errorbar(aes(
+    x = date_wp,
+    ymin = (mean_lma - sd_lma),
+    ymax = (mean_lma + sd_lma)
+  ), width = 0, color = "black") +
+    geom_point(aes(x = date_wp, 
+                   y = mean_lma), 
+               size = 3)  +
+  scale_x_date(breaks = unique(lma_plot_summary$date_wp), 
+               date_labels = "%Y-%m-%d") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(y = "Al:As (cm2)")
+lma_plot
+```
 
 #Phenology timelines
 ```{r, fig.height=2, fig.width=6}
@@ -482,10 +533,22 @@ ggsave(here("figures", "figures", "Fig 5", "lma_both_spp"), lma_swc_plot, device
 ##USE THIS ONE: 
 #lma_plot <- data_qudo_raw %>% 
 lma_plot_df <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv")))  %>% 
-    select(mean_swc_per_dry_g, lma_g_cm2, species, week, week_alas_link) %>% 
+    select(mean_swc_per_dry_g, lma_g_cm2, species, week, week_alas_link, date_wp) %>% 
   drop_na(mean_swc_per_dry_g)
 
-unique(lma_plot_df$week)
+lma_plot_df_dates <- lma_plot_df %>% 
+  select(date_wp, week_alas_link) %>% 
+  mutate(week_alas_link = case_when(
+    week_alas_link %in% c(11) ~ 10, 
+    week_alas_link %in% c(13) ~ 14, 
+    TRUE ~ as.numeric(week_alas_link)
+  )) %>% 
+  distinct()
+```
+
+
+```{r, fig.height=2, fig.width=6}
+unique(lma_plot_df$date_wp)
 
 lma_plot <- lma_plot_df  %>% 
   mutate(week_alas_link = case_when(
