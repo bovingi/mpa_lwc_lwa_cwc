@@ -872,6 +872,13 @@ final_df_all %>%
 Since the above takes a long time to run, can just read in completed data from prev. runs (should be the same):
 
 
+#START HERE to skip bootstrapping: 
+
+```{r}
+final_df_all <- read_csv(here::here("processed-data", "bootstrapped_df_qudo_lwc_mean.csv"))
+```
+
+
 #-------
 
 #*ANALYSIS*: 
@@ -1570,7 +1577,7 @@ data_qudo_lma <- data_qudo_raw %>%
   mutate(lma_g_cm2 = mean(lma_g_cm2, na.rm = T)) %>% 
   filter(species %in% c("blue oak")) %>% 
   filter(time == "md") %>% 
-  select(week, tree, species, lma_g_cm2, water_potential)
+  select(week, tree, species, lma_g_cm2, water_potential, time_season)
 
 lma_mod <- lmer(water_potential ~ lma_g_cm2 + (lma_g_cm2|week) , data = data_qudo_lma, REML = T)
 lma_mod
@@ -1578,11 +1585,19 @@ lma_mod
 broom.mixed::glance(lma_mod)
 r.squaredGLMM(lma_mod) 
 
-lma_mod_time <- lmer(water_potential ~ lma_g_cm2*time_season + (1|week) + (lma_g_cm2|tree), data = data_qudo_raw)
+lma_mod_time_int <- lmer(water_potential ~ lma_g_cm2*time_season + (1|week) + (lma_g_cm2|tree), data = data_qudo_lma)
+lma_mod_time_int
+
+broom.mixed::glance(lma_mod_time_int)
+r.squaredGLMM(lma_mod_time) 
+
+lma_mod_time <- lmer(water_potential ~ lma_g_cm2 + time_season + (1|week) + (lma_g_cm2|tree), data = data_qudo_lma)
 lma_mod_time
 
 broom.mixed::glance(lma_mod_time)
 r.squaredGLMM(lma_mod_time) 
+
+anova(lma_mod_time_int, lma_mod_time)
 ```
 
 glanced mods

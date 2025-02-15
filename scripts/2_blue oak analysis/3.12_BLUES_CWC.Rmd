@@ -684,7 +684,9 @@ final_df_all_cwc <- bind_rows(cwc_final_df_space, cwc_time_boot_df) %>%
 
 final_df_all_cwc %>% write_csv(here::here("processed-data", "bootstrapped_df_qudo_cwc.csv"))
 ```
+#------------
 
+#START HERE to skip bootstrapping: 
 ```{r}
 final_df_all_cwc <- read_csv(here::here("processed-data", "bootstrapped_df_qudo_cwc.csv"))
 ```
