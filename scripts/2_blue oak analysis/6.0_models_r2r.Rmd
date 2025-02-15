@@ -1,0 +1,593 @@
+---
+title: "6.0_models_r2r"
+author: "Indra Boving"
+date: "2025-02-14"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+#Setup
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(warning = FALSE, message = FALSE) 
+library(janitor)
+library(here)
+library(tidyverse)
+library(lubridate)
+library(rstatix)
+library(vars)
+library(MuMIn)
+library(lme4) #for mixed effects models
+library(arm)
+library(nlme)
+select = dplyr::select
+library(broom.mixed)  # For tidy output of mixed models
+library(readr)
+
+#source(here::here("scripts", "scripts_functions", "figure_info.R"))
+
+datver <- "20230724" #make sure this matches the datver in the processing script
+dataversion <- paste0("Data_", datver)
+```
+
+Need: MPa, LAI, LMA, LWA data
+
+# DATA:
+
+```{r}
+data_og_cwc <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".csv")), show_col_types = F) %>%  
+  filter(species %in% c("blue oak")) %>% 
+  select(tree, week, water_potential, cwc, time_season, time, site, date_wp, date_shift) %>% 
+  mutate(water_potential = -1*water_potential) %>% 
+  distinct() %>% 
+   # filter(!tree %in% c(2012, 2011)) %>% 
+  filter(!(tree %in% c(2346))) %>% #this tree seems to have a problem with post-leafout cwc - all 0s - likely becuase the canopy was too small to see. 
+  filter(!week %in% c(11, 9, 18)) #week 11 only has 9 midday measurements and acts really odd (2022-03-15), 9 just had 3 measurements 
+
+##LMA, LWA, LWC data: 
+data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
+ # filter(time %in% c("md")) %>% 
+  group_by(tree, week) %>% 
+  mutate(lma_g_cm2 = mean(lma_g_cm2, na.rm = T), 
+         water_potential = -1*water_potential) %>% 
+  filter(species %in% c("blue oak")) %>% 
+  select(week, time, tree, species, lma_g_cm2, water_potential, lwc_mean, lwa_g_cm2) %>% 
+  distinct()
+
+df0 <- merge(data_qudo_lma, data_og_cwc %>% select(-water_potential),
+            , by = c("tree", "week", "time"), all = T) %>% 
+  mutate(season = case_when(
+    week %in% c(1:29) ~ "spring/early summer",
+    week %in% c(30:45) ~ "late summer/fall"
+  )) 
+
+##LAI data: 
+
+data_qudo_lai_spring <-  read_csv(here("final_data", "LAI_final.csv")) %>% 
+  clean_names() %>% 
+  select(treestr, springlai) %>% 
+  mutate(tree = as.numeric(treestr))
+
+lai_raw <-  read_csv(here("final_data", "LAI_final.csv")) %>% 
+  clean_names() %>% 
+  select(-difflai, -species, -springstdev)
+
+data_qudo_lai_df <-  lai_raw %>% 
+  pivot_longer(names_to = "time",
+               values_to = "lai",
+               cols = c(2:5)) %>% 
+  mutate(tree = as.numeric(treestr)) %>% 
+  mutate(season = case_when(
+    time %in% c("springlai") ~ "spring/early summer",
+    time %in% c("septlai") ~ "late summer/fall"
+  )) %>% 
+  drop_na(season) %>% 
+  select(-time)
+         
+df <- merge(df0, data_qudo_lai_df, 
+            by = c("tree", "season"),
+            all.x = T)
+
+df_nodates <- df %>% 
+  filter(is.na(date_wp))
+```
+
+Data explanation:
+
+-   LMa and LWa are measured concurrent with WP (and CWC when those
+    occured)
+
+-   LAI is from 2 measurements: spring and september. Spring LAI is
+    associated with CWC and in-situ data from start of campaign (March)
+    though July, September LAI is associated with sampling dates in
+    August and September.
+
+```{r}
+df %>% 
+  ggplot(aes(y = lai, 
+             x = lma_g_cm2, 
+             #color = time_season, 
+             color = as.factor(date_wp))) +
+  geom_point()+
+  geom_smooth(method = "lm", se = F)
+
+df %>% 
+  ggplot(aes(y = lai, 
+             x = lwa_g_cm2, 
+             color = as.factor(date_wp))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = F)
+
+df %>% 
+  ggplot(aes(y = lai, 
+             x = cwc, 
+             color = as.factor(date_wp))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = F)
+
+df %>% 
+  ggplot(aes(y = lai, 
+             x = water_potential, 
+             color = as.factor(week))) +
+  geom_point() +
+  facet_wrap(~time) +
+  geom_smooth(method = "lm", se = F)
+```
+
+# CWC models:
+
+These do not account for spatial vs. temporal analysis with random
+effects, instead this is looking at relationships across the whole
+dataset:
+
+```{r}
+# Filter the data to exclude rows with missing values in the variables of interest
+df_filtered <- df %>% 
+  filter(time %in% c("md"), 
+         cwc > 0) %>% #removing all of the 0 CWCs REALLY reduces the sample size (>200 down to <100), but seems like we should given that it doesn't tell us much except that the trees are probably dry?
+  filter(!is.na(cwc) & !is.na(lma_g_cm2) & !is.na(water_potential) & !is.na(lai))
+
+# Fit models suggested by reviewer 3:
+model_lwa_lai <- lmer(cwc ~ lwa_g_cm2 * lai + (1 | tree), data = df_filtered)
+model_lwc_lma_lai <- lmer(cwc ~ lwc_mean * lma_g_cm2 * lai + (1 | tree), data = df_filtered)
+
+# Additional models
+model_lai <- lmer(cwc ~ lai + (1 | tree), data = df_filtered) #does LAI along predict CWC? 
+model_cwc <- lmer(cwc ~ water_potential + (1 | tree), data = df_filtered) #does midday MPa predict CWC?
+model_lma <- lmer(cwc ~ lma_g_cm2 + (1 | tree), data = df_filtered) #Does LMA?
+model_time_season <- lmer(cwc ~ time_season + (1 | tree), data = df_filtered) #Does just being before vs. after leafout?
+model_lwa <- lmer(cwc ~ lwa_g_cm2 + (1 | tree), data = df_filtered) #Does LWA? This is the ground level analogue to CWC, so it probably should if CWC actually captures leaf water... 
+model_lwc <- lmer(cwc ~ lwc_mean + (1 | tree), data = df_filtered) #Does LWC?
+
+# List of models
+models <- list(
+  lwa_lai = model_lwa_lai,
+  lwc_lma_lai = model_lwc_lma_lai,
+  lai = model_lai,
+  cwc = model_cwc,
+  lma = model_lma,
+  time_season = model_time_season,
+  lwa = model_lwa,
+  lwc = model_lwc
+)
+
+# Create a summary table of AIC for each model
+model_summary <- bind_rows(
+  lapply(names(models), function(model_name) {
+    model <- models[[model_name]]
+    model_aic <- AIC(model)
+    model_coeffs <- tidy(model) %>% select(term, estimate) %>% pivot_wider(names_from = term, values_from = estimate)
+    
+    # Collect model structure (excluding random effect part)
+    model_formula <- deparse(formula(model))
+    model_formula <- gsub("\\s*\\+\\s*\\(1\\s*\\|\\s*tree\\)", "", model_formula)  # Remove random effect part
+    
+    model_data <- data.frame(
+      model = model_formula,
+      AIC = model_aic,
+      delta_AIC = model_aic - min(sapply(models, AIC))
+    )
+    
+    bind_cols(model_data, model_coeffs)
+  })
+)
+
+# Get models within 10 AIC points of the top model
+min_aic <- min(model_summary$AIC)
+top_models <- model_summary %>% filter(AIC <= min_aic + 10) %>% 
+  arrange(delta_AIC)
+
+# Save final table
+write_csv(top_models, here("processed-data", "model results", "qudo_top_models_cwc.csv"))
+
+# Print the table
+print(top_models)
+```
+
+```{r}
+#attempt to view: 
+ggplot(df_filtered, aes(y = cwc, 
+                x = lwc_mean, 
+                color = week)) +
+  geom_point()
+
+ggplot(df_filtered, aes(y = cwc, 
+                x = lma_g_cm2, 
+                color = week)) +
+  geom_point()
+
+ggplot(df_filtered, aes(y = cwc, 
+                x = lai, 
+                color = week)) +
+  geom_point()
+```
+
+
+Models the reviewer wanted us to look at:
+
+```{r}
+# Save separate table for specific models
+selected_models <- model_summary %>% filter(model %in% c("cwc ~ lwa_g_cm2 * lai", "cwc ~ lwc_mean * lma_g_cm2 * lai", "cwc ~ lai")) %>% 
+  arrange(delta_AIC)
+write_csv(selected_models, here("processed-data", "model results", "qudo_selected_models_cwc.csv"))
+
+# Print the selected models table
+print(selected_models)
+```
+
+Best model by AIC: *cwc \~ lwc_mean \* lma_g_cm2 \* lai*
+
+```{r}
+print(model_lwc_lma_lai)
+
+# Model assumption checks for a single model
+par(mfrow = c(2, 2))  # Set up a 2x2 plotting area
+
+# Residuals vs. Fitted plot
+plot(model_lwc_lma_lai, which = 1, main = "Residuals vs Fitted - LWA & LAI Model")
+
+# QQ Plot of residuals
+qqnorm(residuals(model_lwc_lma_lai), main = "QQ Plot - LWA & LAI Model")
+qqline(residuals(model_lwc_lma_lai))
+
+# Histogram of residuals
+hist(residuals(model_lwc_lma_lai), main = "Histogram of Residuals - LWA & LAI Model", xlab = "Residuals")
+
+# Fitted values vs. Residuals
+plot(fitted(model_lwc_lma_lai), residuals(model_lwc_lma_lai), 
+     main = "Fitted vs Residuals - LWA & LAI Model", 
+     xlab = "Fitted values", ylab = "Residuals")
+
+```
+
+# MPa models, just MIDDAYS:
+
+```{r}
+# Filter the data to exclude rows with missing values in the variables of interest
+df_filtered <- df %>% 
+  filter(time %in% c("md"), 
+        # cwc > 0 #removing all of the 0 CWCs REALLY reduces the sample size, and also doesnt make a difference for the top mod. 
+         ) %>% 
+  filter(!is.na(cwc) & !is.na(lma_g_cm2) & !is.na(water_potential) & !is.na(lai))
+
+# Fit models with different combinations of predictors
+model_cwc <- lmer(water_potential ~ cwc + (1 | tree), data = df_filtered)
+model_cwc_time <- lmer(water_potential ~ cwc*time_season + (1 | tree), data = df_filtered)
+model_lma <- lmer(water_potential ~ lma_g_cm2 + (1 | tree), data = df_filtered)
+model_lwa <- lmer(water_potential ~ lwa_g_cm2 + (1 | tree), data = df_filtered)
+model_lwc <- lmer(water_potential ~ lwc_mean + (1 | tree), data = df_filtered)
+model_lai <- lmer(water_potential ~ lai + (1 | tree), data = df_filtered)
+model_lwa_lai <- lmer(water_potential ~ lai*lwa_g_cm2 + (1 | tree), data = df_filtered)
+model_lwc_lma_lai <- lmer(water_potential ~ lai*lwc_mean*lma_g_cm2 + (1 | tree), data = df_filtered)
+
+
+# List of models
+models <- list(
+  cwc = model_cwc,
+  lma = model_lma,
+  lwa = model_lwa,
+  lwc = model_lwc,
+  lai = model_lai,
+  cwc_time = model_cwc_time,
+  lwa_lai = model_lwa_lai,
+  lwc_lma_lai = model_lwc_lma_lai
+)
+
+
+# Create a summary table of AIC for each model
+model_summary <- bind_rows(
+  lapply(names(models), function(model_name) {
+    model <- models[[model_name]]
+    model_aic <- AIC(model)
+    model_coeffs <- tidy(model) %>% select(term, estimate) %>% pivot_wider(names_from = term, values_from = estimate)
+    
+    # Collect model structure (excluding random effect part)
+    model_formula <- deparse(formula(model))
+    model_formula <- gsub("\\s*\\+\\s*\\(1\\s*\\|\\s*tree\\)", "", model_formula)  # Remove random effect part
+    
+    model_data <- data.frame(
+      model = model_formula,
+      AIC = model_aic,
+      delta_AIC = model_aic - min(sapply(models, AIC))
+    )
+    
+    bind_cols(model_data, model_coeffs)
+  })
+)
+
+# Get top 5 models by AIC
+model_summary <- model_summary %>% arrange(AIC) 
+# Get models within 10 AIC points of the top model
+min_aic <- min(model_summary$AIC)
+
+top_models <- model_summary %>% filter(AIC <= min_aic + 50) %>% 
+  arrange(delta_AIC)
+
+
+# Save final table
+write_csv(top_models, here("processed-data", "model results", "qudo_top5_mems_mpa_middays.csv"))
+
+# Print the table
+print(top_models)
+```
+
+Best model by AIC: *water_potential \~ lai \* lwc_mean \* lma_g_cm2*
+
+```{r}
+print(model_lwc_lma_lai)
+
+#attempt to view: 
+ggplot(df_filtered, aes(y = water_potential, 
+                x = lwc_mean,
+                color = lma_g_cm2, 
+                size = lai)) +
+  geom_point()
+
+# Model assumption checks for a single model
+par(mfrow = c(2, 2))  # Set up a 2x2 plotting area
+
+# Residuals vs. Fitted plot
+plot(model_lwc_lma_lai, which = 1, main = "Residuals vs Fitted - LWC*LAI*LMA Model")
+
+# QQ Plot of residuals
+qqnorm(residuals(model_lwc_lma_lai), main = "QQ Plot - LWC*LAI*LMA Model")
+qqline(residuals(model_lwc_lma_lai))
+
+# Histogram of residuals
+hist(residuals(model_lwc_lma_lai), main = "Histogram of Residuals - LWC*LAI*LMA Model", xlab = "Residuals")
+
+# Fitted values vs. Residuals
+plot(fitted(model_lwc_lma_lai), residuals(model_lwc_lma_lai), 
+     main = "Fitted vs Residuals - LWC*LAI*LMA Model", 
+     xlab = "Fitted values", ylab = "Residuals")
+
+```
+
+# MPa models, just PREDAWN:
+
+```{r}
+# Filter the data to exclude rows with missing values in the variables of interest
+df_filtered <- df %>% 
+  filter(time %in% c("pd"), 
+        # cwc > 0 #removing all of the 0 CWCs REALLY reduces the sample size, and also doesnt make a difference for the top mod. 
+         ) %>% 
+  filter(!is.na(cwc) & !is.na(lma_g_cm2) & !is.na(water_potential) & !is.na(lai))
+
+# Fit models with different combinations of predictors
+model_cwc <- lmer(water_potential ~ cwc + (1 | tree), data = df_filtered)
+model_cwc_time <- lmer(water_potential ~ cwc*time_season + (1 | tree), data = df_filtered)
+model_lma <- lmer(water_potential ~ lma_g_cm2 + (1 | tree), data = df_filtered)
+model_lwa <- lmer(water_potential ~ lwa_g_cm2 + (1 | tree), data = df_filtered)
+model_lwc <- lmer(water_potential ~ lwc_mean + (1 | tree), data = df_filtered)
+model_lai <- lmer(water_potential ~ lai + (1 | tree), data = df_filtered)
+model_lwa_lai <- lmer(water_potential ~ lai*lwa_g_cm2 + (1 | tree), data = df_filtered)
+model_lwc_lma_lai <- lmer(water_potential ~ lai*lwc_mean*lma_g_cm2 + (1 | tree), data = df_filtered)
+
+
+# List of models
+models <- list(
+  cwc = model_cwc,
+  lma = model_lma,
+  lwa = model_lwa,
+  lwc = model_lwc,
+  lai = model_lai,
+  cwc_time = model_cwc_time,
+  lwa_lai = model_lwa_lai,
+  lwc_lma_lai = model_lwc_lma_lai
+)
+
+
+# Create a summary table of AIC for each model
+model_summary <- bind_rows(
+  lapply(names(models), function(model_name) {
+    model <- models[[model_name]]
+    model_aic <- AIC(model)
+    model_coeffs <- tidy(model) %>% select(term, estimate) %>% pivot_wider(names_from = term, values_from = estimate)
+    
+    # Collect model structure (excluding random effect part)
+    model_formula <- deparse(formula(model))
+    model_formula <- gsub("\\s*\\+\\s*\\(1\\s*\\|\\s*tree\\)", "", model_formula)  # Remove random effect part
+    
+    model_data <- data.frame(
+      model = model_formula,
+      AIC = model_aic,
+      delta_AIC = model_aic - min(sapply(models, AIC))
+    )
+    
+    bind_cols(model_data, model_coeffs)
+  })
+)
+
+# Get top 5 models by AIC
+model_summary <- model_summary %>% arrange(AIC) 
+# Get models within 10 AIC points of the top model
+min_aic <- min(model_summary$AIC)
+
+top_models <- model_summary %>% filter(AIC <= min_aic + 50) %>% 
+  arrange(delta_AIC)
+
+
+# Save final table
+write_csv(top_models, here("processed-data", "model results", "qudo_top5_mems_mpa_middays.csv"))
+
+# Print the table
+print(top_models)
+```
+
+Best model by AIC: *water_potential \~ lai \* lwc_mean \* lma_g_cm2*
+
+```{r}
+print(model_cwc_time)
+
+#attempt to view: 
+ggplot(df_filtered, aes(y = water_potential, 
+                x = cwc,
+                color = time_season)) +
+  geom_point()
+
+# Model assumption checks for a single model
+par(mfrow = c(2, 2))  # Set up a 2x2 plotting area
+
+# Residuals vs. Fitted plot
+plot(model_cwc_time, which = 1, main = "Residuals vs Fitted - CWC + time_season Model")
+
+# QQ Plot of residuals
+qqnorm(residuals(model_cwc_time), main = "QQ Plot - CWC + time_season Model")
+qqline(residuals(model_cwc_time))
+
+# Histogram of residuals
+hist(residuals(model_cwc_time), main = "Histogram of Residuals - CWC + time_season Model", xlab = "Residuals")
+
+# Fitted values vs. Residuals
+plot(fitted(model_cwc_time), residuals(model_cwc_time), 
+     main = "Fitted vs Residuals - CWC + time_season Model", 
+     xlab = "Fitted values", ylab = "Residuals")
+
+```
+
+But, there are so many CWC = 0 here, what happens if we remove them:
+
+### MPa models, just PREDAWN, filtered CWC
+
+```{r}
+# Filter the data to exclude rows with missing values in the variables of interest
+df_filtered <- df %>% 
+  filter(time %in% c("pd"), 
+         cwc > 0 
+         ) %>% 
+  filter(!is.na(cwc) & !is.na(lma_g_cm2) & !is.na(water_potential) & !is.na(lai))
+
+# Fit models with different combinations of predictors
+model_cwc <- lmer(water_potential ~ cwc + (1 | tree), data = df_filtered)
+model_cwc_time <- lmer(water_potential ~ cwc*time_season + (1 | tree), data = df_filtered)
+model_lma <- lmer(water_potential ~ lma_g_cm2 + (1 | tree), data = df_filtered)
+model_lwa <- lmer(water_potential ~ lwa_g_cm2 + (1 | tree), data = df_filtered)
+model_lwc <- lmer(water_potential ~ lwc_mean + (1 | tree), data = df_filtered)
+model_lai <- lmer(water_potential ~ lai + (1 | tree), data = df_filtered)
+model_lwa_lai <- lmer(water_potential ~ lai*lwa_g_cm2 + (1 | tree), data = df_filtered)
+model_lwc_lma_lai <- lmer(water_potential ~ lai*lwc_mean*lma_g_cm2 + (1 | tree), data = df_filtered)
+
+
+# List of models
+models <- list(
+  cwc = model_cwc,
+  lma = model_lma,
+  lwa = model_lwa,
+  lwc = model_lwc,
+  lai = model_lai,
+  cwc_time = model_cwc_time,
+  lwa_lai = model_lwa_lai,
+  lwc_lma_lai = model_lwc_lma_lai
+)
+
+
+# Create a summary table of AIC for each model
+model_summary <- bind_rows(
+  lapply(names(models), function(model_name) {
+    model <- models[[model_name]]
+    model_aic <- AIC(model)
+    model_coeffs <- tidy(model) %>% select(term, estimate) %>% pivot_wider(names_from = term, values_from = estimate)
+    
+    # Collect model structure (excluding random effect part)
+    model_formula <- deparse(formula(model))
+    model_formula <- gsub("\\s*\\+\\s*\\(1\\s*\\|\\s*tree\\)", "", model_formula)  # Remove random effect part
+    
+    model_data <- data.frame(
+      model = model_formula,
+      AIC = model_aic,
+      delta_AIC = model_aic - min(sapply(models, AIC))
+    )
+    
+    bind_cols(model_data, model_coeffs)
+  })
+)
+
+# Get top 5 models by AIC
+model_summary <- model_summary %>% arrange(AIC) 
+# Get models within 10 AIC points of the top model
+min_aic <- min(model_summary$AIC)
+
+top_models <- model_summary %>% filter(AIC <= min_aic + 50) %>% 
+  arrange(delta_AIC)
+
+
+# Save final table
+write_csv(top_models, here("processed-data", "model results", "qudo_top5_mems_mpa_middays.csv"))
+
+# Print the table
+print(top_models)
+```
+
+Same thing! CWC time is still the top model:
+
+```{r}
+print(model_cwc_time)
+
+#attempt to view: 
+ggplot(df_filtered, aes(y = water_potential, 
+                x = cwc,
+                color = time_season)) +
+  geom_point()
+
+# Model assumption checks for a single model
+par(mfrow = c(2, 2))  # Set up a 2x2 plotting area
+
+# Residuals vs. Fitted plot
+plot(model_cwc_time, which = 1, main = "Residuals vs Fitted - CWC + time_season Model")
+
+# QQ Plot of residuals
+qqnorm(residuals(model_cwc_time), main = "QQ Plot - CWC + time_season Model")
+qqline(residuals(model_cwc_time))
+
+# Histogram of residuals
+hist(residuals(model_cwc_time), main = "Histogram of Residuals - CWC + time_season Model", xlab = "Residuals")
+
+# Fitted values vs. Residuals
+plot(fitted(model_cwc_time), residuals(model_cwc_time), 
+     main = "Fitted vs Residuals - CWC + time_season Model", 
+     xlab = "Fitted values", ylab = "Residuals")
+
+```
+
+# SPACE vs. TIME CWC.
+
+Is this the correct way to use random effects? How to show this in
+paper, if we include it? New SI table or main text table?
+
+What are the best predictors of CWC over space and time?
+
+```{r}
+#TIME: 
+model_lwa_lai_time <- lmer(cwc ~ lwa_g_cm2 * lai + (lwa_g_cm2 | tree) + (lai | tree), data = df_filtered) #random slope and intercept for LWA and LAI for each tree over time
+model_lwc_lma_lai_time <- lmer(cwc ~ lwc_mean * lma_g_cm2 * lai + (lwa_g_cm2 | tree) + (lai | tree), data = df_filtered) #random slope and intercept for LWC, LMA, and LAI for each tree over time
+
+#SPACE: 
+model_lwa_lai_space <- lmer(cwc ~ lwa_g_cm2 * lai + (lwa_g_cm2 | week) + (lai | week), data = df_filtered) #random slope and intercept for LWA and LAI for all trees in a given sample date
+model_lwc_lma_lai_space <- lmer(cwc ~ lwc_mean * lma_g_cm2 * lai + (lwa_g_cm2 | week) + (lai | week), data = df_filtered) #random slope and intercept for LWC, LMA, and LAI for all trees in a given sample date
+
+#DIEL not possible with CWC.
+
+
+```
