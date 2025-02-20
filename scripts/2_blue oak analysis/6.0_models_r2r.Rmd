@@ -50,7 +50,8 @@ data_og_cwc <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".cs
 data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
  # filter(time %in% c("md")) %>% 
   group_by(tree, week) %>% 
-  mutate(lma_g_cm2 = mean(lma_g_cm2, na.rm = T), 
+  mutate(lwa_g_cm2 = lwa_g_cm2_new, #use the 'new' version, increases sample size because this includes estimates from bulk data.
+         lma_g_cm2 = mean(lma_g_cm2_new, na.rm = T), 
          water_potential = -1*water_potential) %>% 
   filter(species %in% c("blue oak")) %>% 
   select(week, time, tree, species, lma_g_cm2, water_potential, lwc_mean, lwa_g_cm2) %>% 
@@ -106,6 +107,7 @@ Data explanation:
 
 ```{r}
 df %>% 
+  filter(time == "md") %>% 
   ggplot(aes(y = lai, 
              x = lma_g_cm2, 
              #color = time_season, 
@@ -114,6 +116,7 @@ df %>%
   geom_smooth(method = "lm", se = F)
 
 df %>% 
+   filter(time == "md") %>% 
   ggplot(aes(y = lai, 
              x = lwa_g_cm2, 
              color = as.factor(date_wp))) +
@@ -121,6 +124,7 @@ df %>%
   geom_smooth(method = "lm", se = F)
 
 df %>% 
+   filter(time == "md") %>% 
   ggplot(aes(y = lai, 
              x = cwc, 
              color = as.factor(date_wp))) +
@@ -128,12 +132,81 @@ df %>%
   geom_smooth(method = "lm", se = F)
 
 df %>% 
+   filter(time == "md",
+          cwc > 0) %>% 
+  ggplot(aes(x = lai, 
+             y = cwc, 
+             color = as.factor(date_wp))) +
+  geom_point() +
+  geom_smooth(method = "lm", se = F)
+```
+
+
+```{r}
+df %>% 
+   filter(time == "md") %>% 
   ggplot(aes(y = lai, 
              x = water_potential, 
              color = as.factor(week))) +
   geom_point() +
   facet_wrap(~time) +
   geom_smooth(method = "lm", se = F)
+
+df %>% 
+   filter(time == "md") %>% 
+  ggplot(aes(x = lwc_mean, 
+             y = lai, 
+             color = as.factor(week))) +
+  geom_point() +
+  facet_wrap(~time) +
+  geom_smooth(method = "lm", se = F)
+
+df %>% 
+   filter(time == "pd") %>% 
+  ggplot(aes(y = lai, 
+             x = water_potential, 
+             #size = as.factor(week),
+             color = as.factor(tree))) +
+  geom_point() +
+  facet_wrap(~time) +
+  geom_smooth(method = "lm", se = F)
+
+df %>% 
+   filter(time == "md") %>% 
+  ggplot(aes(x = lwa_g_cm2, 
+             y = cwc, 
+             #size = as.factor(week),
+             color = as.factor(week))) +
+  geom_point() +
+  facet_wrap(~time) +
+  geom_smooth(method = "lm", se = F)
+```
+
+```{r}
+df_lai <- df %>% 
+  mutate(cwc_ground = lma_g_cm2*lwc_mean*lai)
+
+df_lai %>% 
+  # filter(time == "md") %>% 
+  ggplot(aes(y = cwc, 
+             x = cwc_ground, 
+             #size = as.factor(week),
+             color = as.factor(week))) +
+  geom_point() +
+  facet_wrap(~time) +
+  geom_smooth(method = "lm", se = F)
+
+df_lai %>% 
+   filter(cwc > 0) %>% 
+  ggplot(aes(y = cwc, 
+             x = cwc_ground, 
+             #size = as.factor(week),
+             color = as.factor(week))) +
+  geom_point() +
+  facet_wrap(~time) +
+  geom_smooth(method = "lm", se = F)
+
+length(which(is.na(df_lai$lwa_g_cm2)))
 ```
 
 # CWC models:
@@ -145,13 +218,15 @@ dataset:
 ```{r}
 # Filter the data to exclude rows with missing values in the variables of interest
 df_filtered <- df %>% 
+  mutate(cwc_ground = lma_g_cm2*lwc_mean*lai) %>% 
   filter(time %in% c("md"), 
          cwc > 0) %>% #removing all of the 0 CWCs REALLY reduces the sample size (>200 down to <100), but seems like we should given that it doesn't tell us much except that the trees are probably dry?
-  filter(!is.na(cwc) & !is.na(lma_g_cm2) & !is.na(water_potential) & !is.na(lai))
+  filter(!is.na(cwc) & !is.na(lma_g_cm2) & !is.na(water_potential & !is.na(lwc_mean)) & !is.na(lai))
 
 # Fit models suggested by reviewer 3:
 model_lwa_lai <- lmer(cwc ~ lwa_g_cm2 * lai + (1 | tree), data = df_filtered)
 model_lwc_lma_lai <- lmer(cwc ~ lwc_mean * lma_g_cm2 * lai + (1 | tree), data = df_filtered)
+model_ground <- lmer(cwc ~ cwc_ground + (1 | tree), data = df_filtered)
 
 # Additional models
 model_lai <- lmer(cwc ~ lai + (1 | tree), data = df_filtered) #does LAI along predict CWC? 
@@ -170,7 +245,8 @@ models <- list(
   lma = model_lma,
   time_season = model_time_season,
   lwa = model_lwa,
-  lwc = model_lwc
+  lwc = model_lwc,
+  cwc_ground = model_ground
 )
 
 # Create a summary table of AIC for each model

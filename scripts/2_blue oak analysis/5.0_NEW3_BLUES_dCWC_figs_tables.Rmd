@@ -896,7 +896,10 @@ sig_mods_all_sig
 ```
 #2.25. FIGURES: All dCWC relationships visualized:
 ```{r}
-fig_data <- merge(dcwc_alldata %>% select(-analysis), sig_mods_all_sig, by = c("date_wp", "time"), all.y = T) %>% 
+fig_data <- merge(dcwc_alldata %>% select(-analysis), 
+                  sig_mods_all_sig, 
+                  by = c("date_wp", "time"), 
+                  all.y = T) %>% 
   mutate(r_squared = round(r_squared, 3)) %>% 
   filter(!(variable == "lma_g_cm2")) %>% 
   ungroup() %>% 
@@ -1175,63 +1178,6 @@ ggplot(df, aes(x = date_wp, y = slope_estimate, color = analysis)) +
   ggtitle("Bonferonni")
 ```
 
-```{r}
-# fig_data <- merge(dcwc_alldata %>% select(-analysis), sig_mods_all_sig, by = c("date_wp", "time"), all.y = T) %>% 
-#   mutate(r_squared = round(r_squared, 3)) %>% 
-#   filter(!(variable == "lma_g_cm2")) %>% 
-#   ungroup() %>% 
-#   distinct() %>% 
-#   dplyr::group_by(variable, date_wp, time, analysis) %>% 
-#   mutate(count = n()) %>% 
-#   filter(count > 5) 
-# 
-# fig_data %>% 
-#   group_by(variable, date_wp, time) %>% 
-#   count()
-# 
-# dcwc_alldata %>% 
-#   group_by(week, date_wp, time) %>% 
-#   count()
-
-
-# # Step 1: Create variable_new column based on specified conditions
-# df <- sig_mods_all %>%
-#   filter(!is.na(time)) %>% 
-#   mutate(variable_new = ifelse(variable == "water_potential", paste(variable, time, sep = "_"), variable)) %>%
-#   select(date_wp, slope_estimate, analysis, p_value, variable_new) %>% 
-#   distinct() %>% 
-#   filter(!(variable_new %in% c("water_potential_md") & slope_estimate < -0.005)) %>% 
-#   filter(!(variable_new %in% c("lwc_mean") & slope_estimate < -0.3)) %>% 
-# #  filter(slope_estimate < 10) %>% 
-#   # filter(!(date_wp %in% c("2022-03-23",
-#   #                         "2022-03-30",
-#   #                        "2022-04-06",
-#   #                        "2022-04-13"
-#   #                       # "2022-05-23",
-#   #                       # "2022-07-19",
-#   #                       # "2022-08-18",
-#   #                       # "2022-09-15"
-#   #                       ))) %>%
-#   filter(!(analysis == "dcwc_beforeleafout"))
-# 
-# # Step 2: Plotting
-# ggplot(df, aes(x = date_wp, y = slope_estimate, color = analysis)) +
-#   geom_hline(yintercept = 0) +
-#   # ggbeeswarm::geom_beeswarm(aes(size = ifelse(p_value < 0.05, 3, 1)), 
-#   #             position = position_jitter(width = 1, height = 0)) +
-#    geom_jitter(aes(size = ifelse(p_value < 0.05, 3, 1)), 
-#               position = position_jitter(width = 3, height = 0)) +
-#   facet_wrap(~ variable_new, scales = "free", labeller = label_wrap_gen(multi_line = TRUE)) +
-#   labs(x = "Date", y = "Slope", color = "Analysis") +
-#   scale_size_identity() +  # Ensures that the size mapping from `ifelse` is used directly
-#   theme(
-#     strip.text = element_text(size = 10),
-#     legend.position = "bottom"
-#   ) +
-#   scale_x_date(date_labels="%d %b %Y", breaks = unique(df$date_wp)) +
-#   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=.5)) +
-#   scale_color_manual(values = c("#c969a1", "#ffbb44","#122451"))
-```
 #3. FIGURES: dCWC and the best dates: 
 ```{r}
 mpa_plot <- fig_data %>% 
@@ -2048,9 +1994,9 @@ dcwc_plot <- filtered_data %>%
            label = "A", size = 6, fontface = "bold") +
   color_very_many +
   theme(plot.margin = unit(c(0.5, 0.5, 0, 0.5), "cm")) +
-  ggtitle("Q. douglasii")  +
-  scale_x_date(breaks = unique(filtered_data$date_new), 
-               date_labels = "%Y-%m-%d")
+  ggtitle("Q. douglasii") # +
+ # scale_x_date(breaks = unique(filtered_data$date_new), 
+              # date_labels = "%Y-%m-%d")
 dcwc_plot
 ```
 
@@ -2159,6 +2105,8 @@ r_squared_data <- fig_data1 %>%
     value_max = max(value, na.rm = TRUE)
   )
 
+check_pvalue <- fig_data1 %>%
+  filter(variable == "water_potential")
 # Add R-squared annotations to the plot
 dcwc_mpa_plot <- fig_data1 %>%
   filter(variable == "water_potential") %>%
@@ -2189,6 +2137,7 @@ dcwc_mpa_plot <- fig_data1 %>%
     show.legend = FALSE  # Suppress legend for this layer
   ) +
   theme(legend.position = c(0.135, 0.90))
+dcwc_mpa_plot
 
 # Combine plots with final layout
 final_plot <- dcwc_plot / dcwc_mpa_plot + 
