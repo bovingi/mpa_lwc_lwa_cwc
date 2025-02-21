@@ -192,10 +192,6 @@ plotly::ggplotly(filtered_data %>%
   color_two_grey)
 ```
 
-Pull 41 trees, get mean slope for those 41, do 1000x. 
-
-
-
 ```{r}
 ###Before leafout: 
 
@@ -315,6 +311,7 @@ n_iterations <- 1000
 
 # Number of random trees to sample
 n_sample_trees <- num_unique_trees # Adjust as needed
+n_sample_trees
 
 # Create an empty data frame to store bootstrapped slopes
 bootstrapped_slopes_df <- data.frame()
@@ -756,25 +753,6 @@ ggsave(here("figures", "quag figures", "cw_area", "cw_area", "nice_space_cw_area
 
 Do we need to include site here? 
 
-Centered cw_area:
-
-```{r}
-space_df_nosite <- wc_wk_centered_df %>% 
-  drop_na(site)
-
-space_mod <- lmer(water_potential ~ cw_area_centered + (cw_area_centered|week), data = space_df_nosite, REML = T)
-#summary(space_mod)
-
-space_mod_site <- lmer(water_potential ~ cw_area_centered  + (cw_area_centered|week) + (1|site), data = space_df_nosite,  REML = T)
-#summary(space_mod_site)
-
-anova(space_mod, space_mod_site)
-```
-
-YES
-
-cw_area uncentered:
-
 ```{r}
 space_df_nosite <- wc_wk_centered_df %>% 
   drop_na(site)
@@ -956,7 +934,7 @@ library(emmeans)
 emmeans(mod, list(pairwise ~ week), adjust = "tukey")
 ```
 
-```{r}
+```{r, eval = F}
 unique(wc_wk_centered_df$week)
 
 #week 10: 
@@ -1177,7 +1155,11 @@ anova(space_mod, space_mod_site)
 ```
 NO
 
-####All time
+####Model: All time
+
+(Splitting into pre vs. post leafout doesn't work here, not enough reps in after before leafout)
+
+Do we need an interaction between time_season and cw_area? 
 ```{r}
 wc_quag_md_df <- wc_quag_df %>% 
   filter(time == "md")
@@ -1192,6 +1174,13 @@ time_season_mod_int <- lmer(water_potential ~ cw_area*time_season + (1|week) + (
 
 time_season_mod_int_df <- broom::tidy(time_season_mod)
 
+anova(time_season_mod, time_season_mod_int)
+```
+
+No. 
+
+Ignoring phenology, what are the slopes per tree? 
+```{r}
 time_mod <- lmer(water_potential ~ cw_area + (1|week) + (cw_area|tree), data = wc_quag_md_df)
 #time_mod <- lmer(water_potential ~ cw_area + (cw_area|tree), data = wc_quag_md_df)
  
@@ -1258,299 +1247,6 @@ ran_df_tree %>%
   ggplot(aes(x = slope))+
   #geom_histogram() +
   geom_density()
-
-ran_df_tree %>% 
-  mutate(tree = as.factor(tree)) %>% 
-  mutate(upr = slope + (std.error), 
-         lwr = slope - (std.error)) %>% 
-  ggplot(aes(color= estimate)
-    ) + 
-  geom_point(aes(y = slope ,x = tree), size =3) +
-    geom_point(aes(y = upr, x = tree), size = 1) +
-  geom_point(aes(y = lwr, x = tree), size = 1) +
-  geom_segment(aes(y= lwr, 
-                   yend = upr, 
-                   x = tree, 
-                   xend = tree, 
-                   color = estimate))+
-  labs(x = "Tree", 
-       color = "Tree", 
-       y = "Slope (Midday MPa ~ cw_area)") +
-theme(
-  strip.background = element_blank(),
-  strip.text.y = element_blank(), 
-  strip.text.x = element_text(size = 18), 
- # axis.text.y = element_blank(), 
-  #axis.ticks.y = element_blank(), 
-  axis.title = element_text(size = 20), 
-  legend.title = element_text(size = 18)
-  ) +
-  theme(legend.position = "none", 
-        axis.text.x = element_blank())#+
-  #theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
-```
-
-####Just linear: 
-```{r}
-lin_wc_quag_md_df <- wc_quag_df %>% 
-  filter(time == "md") %>% 
-  filter(time_season == "after leafout")
-  
-  
-lin_time_mod <- lmer(water_potential ~ cw_area + (1|week) + (cw_area|tree), data = lin_wc_quag_md_df)
-summary(lin_time_mod)
-
-MuMIn::r.squaredGLMM(lin_time_mod)
-```
-
-
-```{r}
-lin_ran_list <- coef(lin_time_mod)
-lin_ran_list
-
-lin_tree_eff <- as.data.frame(lin_ran_list[['tree']]) %>% 
-  mutate(estimate = `(Intercept)`, 
-         slope = `cw_area`,
-         sd = sd(slope)
-         ) %>%
-  select(-`(Intercept)`, 
-          -cw_area)
-lin_tree_eff
-
-lin_ran_err_tree <- arm::se.ranef(lin_time_mod)
-
-lin_ran_err_tree <- as.data.frame(lin_ran_err_tree[['tree']]) %>% 
-  mutate(std.error = `(Intercept)`, 
-         std.error.slope = `cw_area`
-         )%>% 
-  select(-`(Intercept)`, 
-        # -cw_area
-         ) %>% 
-  tibble::rownames_to_column("tree") # Apply rownames_to_column
-
-lin_ran_df_tree_after <- bind_cols(lin_tree_eff, lin_ran_err_tree) %>% 
-  #select(-`1:47`) %>% 
-  data_frame() %>% 
-  mutate(time_season = "After Leafout")
-
-#With standard errors around estimates:
-
-#intercetps 
-lin_ran_df_tree_after%>% 
-  mutate(tree = as.factor(tree)) %>% 
- # filter(tree %in% c(14, 17, 21, 29)) %>% 
- # filter(term == "cw_area") %>% 
-  mutate(upr = estimate + (std.error), 
-         lwr = estimate - (std.error)) %>% 
-  ggplot(aes(color= tree)
-    ) + 
-  geom_point(aes(y = estimate ,x = tree), size =3) +
-    geom_point(aes(y = upr, x = tree), size = 1) +
-  geom_point(aes(y = lwr, x = tree), size = 1) +
-  #geom_line(aes(group = tree, y = tree, x = upr)) +
-  geom_segment(aes(y= lwr, 
-                   yend = upr, 
-                   x = tree, 
-                   xend = tree, 
-                   color = tree))+
-  labs(x = "Tree", 
-       color = "Tree", 
-       y = "Intercepts, AFTER LEAFOUT") +
-   # facet_wrap(~y_var_name, scales = "free") + 
-theme(
-  strip.background = element_blank(),
-  strip.text.y = element_blank(), 
-  strip.text.x = element_text(size = 18), 
- # axis.text.y = element_blank(), 
-  #axis.ticks.y = element_blank(), 
-  axis.title = element_text(size = 20), 
-  legend.title = element_text(size = 18)
-  ) +
- # geom_hline(yintercept = 0, linetype="dotted") + 
- # scale_x_continuous(breaks = seq(9, 30, by = 1)) +
-  theme(legend.position = "none")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1)) +
-  color_very_many 
-
-
-lin_ran_df_tree_after %>% 
-  mutate(tree = as.factor(tree)) %>% 
- # filter(tree %in% c(14, 17, 21, 29)) %>% 
- # filter(term == "cw_area") %>% 
-  mutate(upr = slope + (std.error.slope), 
-         lwr = slope - (std.error.slope)) %>% 
-  ggplot(aes(color= tree)
-    ) + 
-  geom_point(aes(y = slope ,x = tree), size =3) +
-    geom_point(aes(y = upr, x = tree), size = 1) +
-  geom_point(aes(y = lwr, x = tree), size = 1) +
-  #geom_line(aes(group = tree, y = tree, x = upr)) +
-  geom_segment(aes(y= lwr, 
-                   yend = upr, 
-                   x = tree, 
-                   xend = tree, 
-                   color = tree))+
-  labs(x = "Tree", 
-       color = "Tree", 
-       y = "Slope, AFTER LEAFOUT") +
-   # facet_wrap(~y_var_name, scales = "free") + 
-theme(
-  strip.background = element_blank(),
-  strip.text.y = element_blank(), 
-  strip.text.x = element_text(size = 18), 
- # axis.text.y = element_blank(), 
-  #axis.ticks.y = element_blank(), 
-  axis.title = element_text(size = 20), 
-  legend.title = element_text(size = 18)
-  ) +
- # geom_hline(yintercept = 0, linetype="dotted") + 
- # scale_x_continuous(breaks = seq(9, 30, by = 1)) +
-  theme(legend.position = "none")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1)) +
-  color_very_many 
-
-lin_ran_df_tree_after %>% 
-  ggplot(aes(x = slope))+
-  #geom_histogram() +
-  geom_density()
-```
-####Before leafout: 
-
-```{r}
-bef_wc_quag_md_df <- wc_quag_df %>% 
-  filter(time == "md") %>% 
-  filter(time_season == "before leafout") %>% 
-  drop_na(site)
-  
-  
-bef_time_mod <- lmer(water_potential ~ cw_area + (1|week) + (cw_area|tree), data = bef_wc_quag_md_df, REML = T)
-summary(bef_time_mod)
-
-
-MuMIn::r.squaredGLMM(bef_time_mod)
-```
-
-
-```{r}
-bef_ran_list <- coef(bef_time_mod)
-
-bef_tree_eff <- as.data.frame(bef_ran_list[['tree']]) %>% 
-  mutate(estimate = `(Intercept)`, 
-         slope = `cw_area`, 
-         sd = sd(slope)
-         ) %>%
-  select(-`(Intercept)`, 
-          -cw_area)
-bef_tree_eff
-
-bef_ran_err_tree <- arm::se.ranef(bef_time_mod)
-
-bef_ran_err_tree <- as.data.frame(bef_ran_err_tree[['tree']]) %>% 
-  mutate(std.error = `(Intercept)`, 
-         std.error.slope = `cw_area`
-         )%>% 
-  select(-`(Intercept)`, 
-         -cw_area
-         ) %>% 
-  tibble::rownames_to_column("tree") # Apply rownames_to_column
-
-bef_ran_df_tree_before <- bind_cols(bef_tree_eff, bef_ran_err_tree) %>% 
-  #select(-`1:47`) %>% 
-  data_frame()%>% 
-  mutate(time_season = "Before Leafout")
-
-bef_ran_df_tree_before %>% 
-  mutate(tree = as.factor(tree)) %>% 
- # filter(tree %in% c(14, 17, 21, 29)) %>% 
- # filter(term == "cw_area") %>% 
-  mutate(upr = slope + (std.error.slope), 
-         lwr = slope - (std.error.slope)) %>% 
-  ggplot(aes(color= tree)
-    ) + 
-  geom_point(aes(y = slope ,x = tree), size =3) +
-    geom_point(aes(y = upr, x = tree), size = 1) +
-  geom_point(aes(y = lwr, x = tree), size = 1) +
-  #geom_line(aes(group = tree, y = tree, x = upr)) +
-  geom_segment(aes(y= lwr, 
-                   yend = upr, 
-                   x = tree, 
-                   xend = tree, 
-                   color = tree))+
-  labs(x = "Tree", 
-       color = "Tree", 
-       y = "Slope, BEFORE LEAFOUT") +
-   # facet_wrap(~y_var_name, scales = "free") + 
-theme(
-  strip.background = element_blank(),
-  strip.text.y = element_blank(), 
-  strip.text.x = element_text(size = 18), 
- # axis.text.y = element_blank(), 
-  #axis.ticks.y = element_blank(), 
-  axis.title = element_text(size = 20), 
-  legend.title = element_text(size = 18)
-  ) +
- # geom_hline(yintercept = 0, linetype="dotted") + 
- # scale_x_continuous(breaks = seq(9, 30, by = 1)) +
-  theme(legend.position = "none")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1)) #+
- # color_very_many 
-
-bef_ran_df_tree_before %>% 
-  ggplot(aes(x = slope))+
-  #geom_histogram() +
-  geom_density()
-```
-
-####Slopes, SE, pre- and post-
-
-```{r}
-ran_df_tree_before_vs_after <- bind_rows(bef_ran_df_tree_before, lin_ran_df_tree_after)
-
-ef <- ran_df_tree_before_vs_after %>% 
-  group_by(time_season) %>% 
-  mutate(sd = sd(slope),
-         slope = mean(slope), 
-         mean_se = mean(std.error.slope),
-        mean_std.error = mean(std.error),
-        upr_sd = slope + mean_std.error,
-        lwr_sd = slope - mean_std.error,
-         upr = slope + mean_se,
-         lwr = slope - mean_se,
-         time_season = as.factor(time_season)) 
-# %>% 
-#   select(slope, upr, lwr, time_season, sd)
-
-time_summary <- ef %>% 
-ggplot() + 
-  geom_point(aes(y = slope, x = time_season), size =3) +
-    geom_point(aes(y = upr, x = time_season), size = 1) +
-  geom_point(aes(y = lwr, x = time_season), size = 1) +
-  #geom_line(aes(group = tree, y = tree, x = upr)) +
-  geom_segment(aes(y= lwr, 
-                   yend = upr, 
-                   x = time_season, 
-                   xend = time_season)) +
-  labs(y = "Mean Slope +/- SE acrss all trees
-            for each time frame", 
-       x = "Time")
-time_summary
-
-time_summary_sd <- ef %>% 
-ggplot() + 
-  geom_point(aes(y = slope, x = time_season), size =3) +
-    geom_point(aes(y = upr_sd, x = time_season), size = 1) +
-  geom_point(aes(y = lwr_sd, x = time_season), size = 1) +
-  #geom_line(aes(group = tree, y = tree, x = upr)) +
-  geom_segment(aes(y= lwr_sd, 
-                   yend = upr_sd, 
-                   x = time_season, 
-                   xend = time_season)) +
-  labs(y = "Mean Slope +/- SD acrss all trees
-            for each time frame", 
-       x = "Time")
-time_summary_sd
-
-ggsave(here("figures", "quag figures", "cw_area", "time_summary_slopes"), time_summary, device = "jpg", width = 2.5, height = 3, dpi = 300)
 ```
 
 ##Slopes, bootstrapping - inds
@@ -1601,7 +1297,7 @@ glance_df
 
 
 ```{r}
-cw_area_mods <- bind_rows(space_mod_df <- space_mod_df %>% mutate(mod = "space"),
+cw_area_mods <- bind_rows(space_mod_df <- space_mod_df_4 %>% mutate(mod = "space"),
                       time_season_mod_df <- time_season_mod_df %>% mutate(mod= "time"),
   time_season_mod_df <- time_season_mod_int_df %>% mutate(mod= "interaction")) %>% 
   bind_rows(glance_df) %>% 

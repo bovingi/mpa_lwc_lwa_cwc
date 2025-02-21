@@ -1,30 +1,27 @@
-analysis,variable,time,time_means,r_squared,p_value,slope_estimate
-before,water_potential,md,March 8-April 12,0.486,0.008,0.011
-whole,water_potential,md,March 8-April 12,0.534,0.005,0.006
-before,water_potential,md,March 8-May 29,0.443,0.013,0.011
-whole,water_potential,md,March 8-May 29,0.545,0.004,0.006
-after,water_potential,md,July-September,0.338,0.047,0.006
-before,water_potential,md,July-September,0.523,0.012,0.006
-whole,water_potential,md,July-September,0.643,0.003,0.004
-before,water_potential,md,March 8-Sept 15,0.525,0.012,0.007
-whole,water_potential,md,March 8-Sept 15,0.711,0.001,0.005
-whole,water_potential,pd,April 29-May 29,0.434,0.014,0.007
-after,water_potential,pd,March 8-April 12,0.316,0.046,0.013
-before,water_potential,pd,March 8-April 12,0.362,0.03,0.013
-whole,water_potential,pd,March 8-April 12,0.836,0,0.01
-after,water_potential,pd,March 8-May 29,0.293,0.037,0.012
-whole,water_potential,pd,March 8-May 29,0.796,0,0.011
-before,water_potential,pd,July-September,0.567,0.007,0.009
-whole,water_potential,pd,July-September,0.542,0.01,0.005
-after,water_potential,pd,March 8-Sept 15,0.389,0.013,0.011
-before,water_potential,pd,March 8-Sept 15,0.37,0.027,0.011
-whole,water_potential,pd,March 8-Sept 15,0.793,0,0.008
-before,lwa_g_cm2,md,April 29-May 29,0.816,0.036,2.916
-before,lwa_g_cm2,pd,April 29-May 29,0.808,0.002,2.906
-before,lwa_g_cm2,pd,March 8-Sept 15,0.416,0.017,2.357
-before,lwc_mean,md,April 29-May 29,0.554,0.014,0.079
-before,lwc_mean,md,July-September,0.5,0.01,0.136
-before,lwc_mean,pd,April 29-May 29,0.389,0.023,0.051
-before,lwc_mean,pd,March 8-Sept 15,0.31,0.048,0.057
-before,lma_g_cm2,md,March 8-Sept 15,0.401,0.02,1.825
-before,lma_g_cm2,pd,March 8-April 12,0.34,0.047,2.507
+analysis,variable,date_wp,time,r_squared,p_value,slope_estimate
+dcwc_cwarea_alldata,water_potential,2022-05-29,pd,0.434,0.014,0.007
+dcwc_cwarea_alldata,water_potential,2022-09-15,md,0.491,0.016,0.003
+dcwc_cwarea_alldata,water_potential,2022-04-05,pd,0.546,0.009,0.012
+dcwc_cwarea_alldata,water_potential,2022-04-12,md,0.547,0.009,0.004
+dcwc_cwarea_alldata,lwa_g_cm2,2022-05-29,pd,0.317,0.045,0.284
+dcwc_cwarea_alldata,lwa_g_cm2,2022-04-05,md,0.917,0.003,-1.291
+dcwc_cwarea_alldata,lwc_mean,2022-04-12,pd,0.865,0.002,0.087
+dcwc_cwarea_beforeleafout,water_potential,2022-03-08,md,0.406,0.035,0.014
+dcwc_cwarea_beforeleafout,water_potential,2022-09-15,md,0.374,0.045,0.005
+dcwc_cwarea_beforeleafout,water_potential,2022-04-05,pd,0.518,0.013,0.02
+dcwc_cwarea_beforeleafout,water_potential,2022-07-19,md,0.823,0.013,0.004
+dcwc_cwarea_beforeleafout,water_potential,2022-08-18,pd,0.978,0.011,0.007
+dcwc_cwarea_beforeleafout,lwa_g_cm2,2022-05-29,pd,0.65,0.001,0.805
+dcwc_cwarea_beforeleafout,lwc_mean,2022-05-29,pd,0.389,0.023,0.051
+dcwc_cwarea_beforeleafout,lwc_mean,2022-05-29,md,0.57,0.012,0.081
+dcwc_cwarea_beforeleafout,lwc_mean,2022-09-15,md,0.402,0.02,0.108
+dcwc_cwarea_beforeleafout,lma_g_cm2,2022-05-29,NA,0.366,0.029,3.117
+dcwc_cwarea_beforeleafout,lma_g_cm2,2022-09-15,NA,0.357,0.004,0.874
+dcwc_cwarea_beforeleafout,cw_area,2022-09-15,md,0.513,0.02,0.454
+dcwc_cwarea_afterleafout,water_potential,2022-03-16,pd,0.782,0.046,0.032
+dcwc_cwarea_afterleafout,water_potential,2022-04-12,pd,0.572,0.049,0.011
+dcwc_cwarea_afterleafout,lwa_g_cm2,2022-09-15,md,0.323,0.027,1.049
+dcwc_cwarea_afterleafout,lwa_g_cm2,2022-09-15,pd,0.378,0.033,2.098
+dcwc_cwarea_afterleafout,lwa_g_cm2,2022-07-19,md,0.781,0.019,1.498
+dcwc_cwarea_afterleafout,lma_g_cm2,2022-04-05,NA,0.997,0.001,12.431
+dcwc_cwarea_afterleafout,cw_area,2022-05-29,pd,0.631,0.019,0.376

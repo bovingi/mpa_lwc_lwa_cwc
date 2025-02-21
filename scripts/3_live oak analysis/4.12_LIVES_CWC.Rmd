@@ -1270,11 +1270,21 @@ time_season_mod_int <- lmer(water_potential ~ cwc*time_season + (1|week) + (cwc|
 
 time_season_mod_int_df <- broom::tidy(time_season_mod)
 
+anova(time_season_mod, time_season_mod_int)
+```
+
+
+```{r}
 time_mod <- lmer(water_potential ~ cwc + (1|week) + (cwc|tree)+ (1|site), data = wc_quag_md_df)
 #time_mod <- lmer(water_potential ~ cwc + (cwc|tree), data = wc_quag_md_df)
  
 MuMIn::r.squaredGLMM(time_mod)
 
+anova(time_season_mod, time_mod)
+```
+
+
+```{r}
 summary(time_mod)
 
 ran_list <- coef(time_mod)

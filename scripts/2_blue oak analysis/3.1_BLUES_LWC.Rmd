@@ -45,7 +45,12 @@ dataversion <- paste0("Data_", datver)
 #DATA: 
 
 ```{r}
-data_qudo_raw <- read_csv(here::here("processed-data", paste0("analysis",datver,".csv")), show_col_types = FALSE) %>% 
+data_qudo_raw <-  read_csv(here("processed-data", paste0("analysis_bothspp",datver,".csv")))  %>% 
+  filter(species %in% c("blue oak")) %>% 
+#   select(week, time, tree, species, lma_g_cm2, lwa_g_cm2, lwc_mean) %>% 
+#   distinct() 
+# 
+# read_csv(here::here("processed-data", paste0("analysis",datver,".csv")), show_col_types = FALSE) %>% 
  # filter(species == "live oak") %>% 
   distinct() %>% 
  # group_by(week, time) %>% 

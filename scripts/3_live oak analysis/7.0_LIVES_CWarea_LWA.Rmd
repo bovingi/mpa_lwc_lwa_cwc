@@ -45,7 +45,7 @@ dataversion <- paste0("Data_", datver)
 
 ```{r}
 data_og_cwc <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".csv")), show_col_types = F) %>%  
-  filter(species %in% c("blue oak")) %>% 
+  filter(species %in% c("live oak")) %>% 
   select(tree, week, water_potential, cwc, time_season, time, site, date_wp, date_shift) %>% 
   distinct() %>% 
    # filter(!tree %in% c(2012, 2011)) %>% 
@@ -53,22 +53,24 @@ data_og_cwc <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".cs
   filter(!week %in% c(11, 9, 18)) #week 11 only has 9 midday measurements and acts really odd (2022-03-15), 9 just had 3 measurements 
 
 ##LMA, LWA, LWC data: 
-data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
+data_quag_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
  # filter(time %in% c("md")) %>% 
   group_by(tree, week) %>% 
   mutate(lwa_g_cm2 = lwa_g_cm2_new, #use the 'new' version, increases sample size because this includes estimates from bulk data.
          lma_g_cm2 = mean(lma_g_cm2_new, na.rm = T), 
          lwa_g_cm2 = -1*lwa_g_cm2) %>% 
-  filter(species %in% c("blue oak")) %>% 
+  filter(species %in% c("live oak")) %>% 
   select(week, time, tree, species, lma_g_cm2, lwa_g_cm2, lwc_mean) %>% 
   distinct()
 
-data_qudo_lma <- read_csv(here("processed-data", paste0("analysis_bothspp",datver,".csv")))  %>% 
-  filter(species %in% c("blue oak")) %>% 
+#Actually use this, it has fewer steps ot get in working order
+data_quag_lma <- read_csv(here("processed-data", paste0("analysis_bothspp",datver,".csv"))) %>% 
+  filter(species %in% c("live oak")) %>% 
+  mutate(lwa_g_cm2 = lwa_g_cm2_new) %>%  #use the 'new' version, increases sample size because this includes estimates from bulk data. 
   select(week, time, tree, species, lma_g_cm2, lwa_g_cm2, lwc_mean) %>% 
-  distinct() 
+  distinct()
 
-df0 <- merge(data_qudo_lma, data_og_cwc,
+df0 <- merge(data_quag_lma, data_og_cwc,
             , by = c("tree", "week", "time"), all = T) %>% 
   mutate(season = case_when(
     week %in% c(1:29) ~ "spring/early summer",
@@ -77,7 +79,7 @@ df0 <- merge(data_qudo_lma, data_og_cwc,
 
 ##LAI data: 
 
-data_qudo_lai_spring <-  read_csv(here("final_data", "LAI_final.csv")) %>% 
+data_quag_lai_spring <-  read_csv(here("final_data", "LAI_final.csv")) %>% 
   clean_names() %>% 
   select(treestr, springlai) %>% 
   mutate(tree = as.numeric(treestr))
@@ -86,7 +88,7 @@ lai_raw <-  read_csv(here("final_data", "LAI_final.csv")) %>%
   clean_names() %>% 
   select(-difflai, -species, -springstdev)
 
-data_qudo_lai_df <-  lai_raw %>% 
+data_quag_lai_df <-  lai_raw %>% 
   pivot_longer(names_to = "time",
                values_to = "lai",
                cols = c(2:5)) %>% 
@@ -98,7 +100,7 @@ data_qudo_lai_df <-  lai_raw %>%
   drop_na(season) %>% 
   select(-time)
          
-df <- merge(df0, data_qudo_lai_df, 
+df <- merge(df0, data_quag_lai_df, 
             by = c("tree", "season"),
             all.x = T) %>% 
   group_by(tree, time, week) %>% 
@@ -158,7 +160,7 @@ plotly::ggplotly(filtered_data %>%
   mutate(COUNT = n()) %>% 
   filter(!(COUNT == 1)) %>% 
   select(-COUNT) %>% 
-  ggplot(aes(y = lwc_mean, 
+  ggplot(aes(y = lwa_g_cm2, 
              x = cw_area, 
              color = time_season, 
              size = week,
@@ -206,7 +208,7 @@ Pull 41 trees, get mean slope for those 41, do 1000x.
 data <- filtered_data  %>% 
   filter(time_season == "before leafout") %>% 
   distinct() %>% 
-  drop_na(lwc_mean, cw_area) %>% 
+  drop_na(lwa_g_cm2, cw_area) %>% 
   group_by(tree) %>% 
   mutate(COUNT = n()) %>% 
   filter(!(COUNT == 1)) %>% 
@@ -231,7 +233,7 @@ bootstrapped_slopes_df <- data.frame()
 
 # Function to calculate the slope for a specific tree within each iteration
 calculate_slope_for_tree <- function(tree_data) {
-  model <- lm(lwc_mean ~ cw_area, data = tree_data)
+  model <- lm(lwa_g_cm2 ~ cw_area, data = tree_data)
   return(coef(model)[2])  # Extract the slope coefficient
 }
 
@@ -300,9 +302,9 @@ mean_slope_before
 
 data <- common_trees_data %>% 
   filter(time_season == "after leafout") %>% 
-  select(tree, week, lwc_mean, cw_area) %>% 
+  select(tree, week, lwa_g_cm2, cw_area) %>% 
   distinct() %>% 
-  drop_na(lwc_mean, cw_area) %>% 
+  drop_na(lwa_g_cm2, cw_area) %>% 
   group_by(tree) %>% 
   mutate(COUNT = n()) %>% 
   filter(!(COUNT == 1)) %>% 
@@ -325,7 +327,7 @@ bootstrapped_slopes_df <- data.frame()
 
 # Function to calculate the slope for a specific tree within each iteration
 calculate_slope_for_tree <- function(tree_data) {
-  model <- lm(lwc_mean ~ cw_area, data = tree_data)
+  model <- lm(lwa_g_cm2 ~ cw_area, data = tree_data)
   return(coef(model)[2])  # Extract the slope coefficient
 }
 
@@ -419,7 +421,7 @@ NOTE: this includes site random effect, which the centered version does not need
 space_nice <- df %>% 
   filter(time == "md") %>% 
   drop_na(site) %>% 
-  ggplot(aes(y = lwc_mean, 
+  ggplot(aes(y = lwa_g_cm2, 
             # x = cw_area_centered, 
             x = cw_area,
              #color = tree_factor
@@ -459,20 +461,20 @@ space_nice
 ```{r}
 data <- df %>% 
   filter(time == "md") %>% 
-  select(tree, week, lwc_mean, cw_area, site) %>% 
+  select(tree, week, lwa_g_cm2, cw_area, site) %>% 
   distinct() %>% 
-  drop_na(cw_area, lwc_mean)
+  drop_na(cw_area, lwa_g_cm2)
 
 #HOW MANY trees? 
 
 data %>% 
-  drop_na(lwc_mean, cw_area) %>% 
+  drop_na(lwa_g_cm2, cw_area) %>% 
   group_by(week, site) %>% 
   count()
 #..not a lot with site, so probably wont need site
 
 #model without site: 
-space_mod_4 <- lmer(lwc_mean ~ cw_area + (cw_area|week), data =  data , REML = T)
+space_mod_4 <- lmer(lwa_g_cm2 ~ cw_area + (cw_area|week), data =  data , REML = T)
 
 space_mod_df_4 <- broom.mixed::tidy(space_mod_4)
 #space_mod_df
@@ -571,7 +573,7 @@ for (x in unique_weeks) {
     boot_sample <- week_data[boot_indices, ]
     
     # Calculate the slope for the bootstrapped sample
-    model <- lm(lwc_mean ~ cw_area, data = boot_sample)
+    model <- lm(lwa_g_cm2 ~ cw_area, data = boot_sample)
     slopes[i] <- coef(model)[2]
   }
   
@@ -625,13 +627,13 @@ final_df_all_cw_area <- bind_rows(cw_area_final_df_space, cw_area_time_boot_df) 
          lwr = lower_bound, 
          upr = upper_bound) 
 
-final_df_all_cw_area %>% write_csv(here::here("processed-data", "bootstrapped_df_qudo_lwc_cw_area.csv"))
+final_df_all_cw_area %>% write_csv(here::here("processed-data", "bootstrapped_df_quag_lwa_cw_area.csv"))
 ```
 #------------
 
 #START HERE to skip bootstrapping: 
 ```{r}
-final_df_all_cw_area <- read_csv(here::here("processed-data", "bootstrapped_df_qudo_lwc_cw_area.csv"))
+final_df_all_cw_area <- read_csv(here::here("processed-data", "bootstrapped_df_quag_lwa_cw_area.csv"))
 ```
 
 #------------
@@ -641,29 +643,29 @@ final_df_all_cw_area <- read_csv(here::here("processed-data", "bootstrapped_df_q
 #Data wrangling: 
 
 ```{r, echo=F}
-wc_qudo_df <-  df %>% 
+wc_quag_df <-  df %>% 
   drop_na(time)
 
-wc_lm_df <- wc_qudo_df %>% 
+wc_lm_df <- wc_quag_df %>% 
   filter(week > 17)
 
-wk_all <- wc_qudo_df 
+wk_all <- wc_quag_df 
 
 wk_all_wide <- wk_all %>% 
   #drop_na(date_wp) %>% 
   pivot_wider(names_from=time, 
-              values_from = c(cw_area, lwc_mean), 
+              values_from = c(cw_area, lwa_g_cm2), 
               values_fn = function(x) mean(x, na.rm = TRUE)
               ) %>% 
     dplyr::group_by(tree, week) %>%
-  fill(c(cw_area_md, cw_area_pd, lwc_mean_pd, lwc_mean_md), .direction = "downup") %>%
+  fill(c(cw_area_md, cw_area_pd, lwa_g_cm2_pd, lwa_g_cm2_md), .direction = "downup") %>%
   dplyr::ungroup()%>% 
  # select(-date_wp) %>% 
   distinct()
 
 wk_all_long_cw_area <- wk_all_wide %>% 
-  drop_na(cw_area_pd, cw_area_md, lwc_mean_md, lwc_mean_pd) %>% 
-  select(-lwc_mean_md, -lwc_mean_pd) %>% 
+  drop_na(cw_area_pd, cw_area_md, lwa_g_cm2_md, lwa_g_cm2_pd) %>% 
+  select(-lwa_g_cm2_md, -lwa_g_cm2_pd) %>% 
   mutate(pd = cw_area_pd, 
          md = cw_area_md) %>% 
   pivot_longer(cols = c(pd, md), 
@@ -672,22 +674,22 @@ wk_all_long_cw_area <- wk_all_wide %>%
   select(-cw_area_pd, -cw_area_md)
 
 wk_all_long_mpa <- wk_all_wide %>% 
-  drop_na(cw_area_pd, cw_area_md, lwc_mean_md, lwc_mean_pd) %>% 
+  drop_na(cw_area_pd, cw_area_md, lwa_g_cm2_md, lwa_g_cm2_pd) %>% 
   select(-cw_area_md, -cw_area_pd) %>% 
-  mutate(pd = lwc_mean_pd, 
-         md = lwc_mean_md) %>% 
+  mutate(pd = lwa_g_cm2_pd, 
+         md = lwa_g_cm2_md) %>% 
   distinct() %>% 
   pivot_longer(cols = c(pd, md), 
                names_to = "time", 
-               values_to = "lwc_mean") %>% 
-  select(-lwc_mean_pd, -lwc_mean_md)
+               values_to = "lwa_g_cm2") %>% 
+  select(-lwa_g_cm2_pd, -lwa_g_cm2_md)
 
 wk_all_long <- merge(wk_all_long_mpa, wk_all_long_cw_area) %>% 
   distinct() %>% 
- # select(-cw_area_NA, -lwc_mean_NA) %>% 
+ # select(-cw_area_NA, -lwa_g_cm2_NA) %>% 
   group_by(tree, week, time) %>% 
   summarise(cw_area = mean(cw_area, na.rm = T), 
-            lwc_mean = mean(lwc_mean, na.rm = T), 
+            lwa_g_cm2 = mean(lwa_g_cm2, na.rm = T), 
             site = site) %>% 
 ungroup() %>% 
   group_by(tree) %>% 
@@ -704,7 +706,7 @@ ungroup() %>%
 
 ```{r, warning = F}
 wc_wk_centered_df <- wk_all_long %>% 
-  mutate(lwc_mean = lwc_mean) %>% 
+  mutate(lwa_g_cm2 = lwa_g_cm2) %>% 
   filter(time == "md") %>% 
   group_by(week) %>% 
   mutate(mean_cw_area = mean(cw_area, na.rm = T)) %>% 
@@ -719,7 +721,7 @@ wc_wk_centered_df <- wk_all_long %>%
 #scaled
 space_nice <- wc_wk_centered_df %>% 
   drop_na(site) %>% 
-  ggplot(aes(y = lwc_mean, 
+  ggplot(aes(y = lwa_g_cm2, 
             # x = cw_area_centered, 
             x = cw_area,
              #color = tree_factor
@@ -754,7 +756,7 @@ space_nice <- wc_wk_centered_df %>%
   guides(color = guide_legend(nrow = 2))
 space_nice
 
-ggsave(here("figures", "qudo figures", "cw_area", "cw_area", "nice_space_lwc_cw_area"), space_nice, device = "jpg", width = 6, height = 4, dpi = 300)
+ggsave(here("figures", "quag figures", "cw_area", "cw_area", "nice_space_lwa_cw_area"), space_nice, device = "jpg", width = 6, height = 4, dpi = 300)
 ```
 
 
@@ -766,21 +768,21 @@ cw_area uncentered:
 space_df_nosite <- wc_wk_centered_df %>% 
   drop_na(site)
 
-space_mod <- lmer(lwc_mean ~ cw_area + (cw_area|week), data = space_df_nosite, REML = T)
+space_mod <- lmer(lwa_g_cm2 ~ cw_area + (cw_area|week), data = space_df_nosite, REML = T)
 #summary(space_mod)
 
-space_mod_site <- lmer(lwc_mean ~ cw_area  + (cw_area|week) + (1|site), data = space_df_nosite,  REML = T)
+space_mod_site <- lmer(lwa_g_cm2 ~ cw_area  + (cw_area|week) + (1|site), data = space_df_nosite,  REML = T)
 #summary(space_mod_site)
 
 anova(space_mod, space_mod_site)
 ```
-Yes, site
+no
 
 Visualize: 
 ```{r}
 wc_wk_centered_df %>% 
   drop_na(site) %>% 
-  ggplot(aes(y = lwc_mean, 
+  ggplot(aes(y = lwa_g_cm2, 
             # x = cw_area_centered, 
             x = cw_area,
              #color = tree_factor
@@ -821,7 +823,7 @@ wc_wk_centered_df %>%
 Get slopes from random effects: 
 
 ```{r, echo=FALSE}
-space_mod_4 <- lmer(lwc_mean ~ cw_area + (cw_area|week) + (1|site), data =  wc_wk_centered_df, REML = T)
+space_mod_4 <- lmer(lwa_g_cm2 ~ cw_area + (cw_area|week), data =  wc_wk_centered_df, REML = T)
 
 space_mod_df_4 <- broom.mixed::tidy(space_mod)
 #space_mod_df
@@ -891,7 +893,7 @@ space_slope
 #Which weeks are significant?
 
 ```{r}
-mod <- lmer(lwc_mean ~ cw_area*week + (1|site), data =wc_wk_centered_df %>% 
+mod <- lmer(lwa_g_cm2 ~ cw_area*week + (1|site), data =wc_wk_centered_df %>% 
               mutate(week = as.factor(week)))
 
 anova(mod)
@@ -903,7 +905,7 @@ library(emmeans)
 emmeans(mod, list(pairwise ~ week), adjust = "tukey")
 ```
 
-```{r}
+```{r, eval=F}
 unique(wc_wk_centered_df$week)
 
 #week 10: 
@@ -912,7 +914,7 @@ wk <- wc_wk_centered_df %>%
   mutate(week = as.factor(week)) %>% 
   filter(week == 10)
 
-space_mod <- lmer(lwc_mean ~ cw_area + (1|site), data =  wk,  REML = T)
+space_mod <- lmer(lwa_g_cm2 ~ cw_area + (1|site), data =  wk,  REML = T)
 summary(space_mod)
 #not sig
 
@@ -922,7 +924,7 @@ wk <- wc_wk_centered_df %>%
   mutate(week = as.factor(week)) %>% 
   filter(week == 12)
 
-space_mod <- lmer(lwc_mean ~ cw_area + (1|site), data =  wk,  REML = T)
+space_mod <- lmer(lwa_g_cm2 ~ cw_area + (1|site), data =  wk,  REML = T)
 summary(space_mod)
 #Sig
 
@@ -932,7 +934,7 @@ wk <- wc_wk_centered_df %>%
   mutate(week = as.factor(week)) %>% 
   filter(week == 14)
 
-space_mod <- lm(lwc_mean ~ cw_area, data =  wk)
+space_mod <- lm(lwa_g_cm2 ~ cw_area, data =  wk)
 summary(space_mod)
 #not sig
 
@@ -946,7 +948,7 @@ wk <- wc_wk_centered_df %>%
   mutate(week = as.factor(week)) %>% 
   filter(week == 17)
 
-space_mod <- lm(lwc_mean ~ cw_area, data =  wk)
+space_mod <- lm(lwa_g_cm2 ~ cw_area, data =  wk)
 summary(space_mod)
 #not sig
 
@@ -956,7 +958,7 @@ wk <- wc_wk_centered_df %>%
   mutate(week = as.factor(week)) %>% 
   filter(week == 19)
 
-space_mod <- lm(lwc_mean ~ cw_area, data =  wk)
+space_mod <- lm(lwa_g_cm2 ~ cw_area, data =  wk)
 summary(space_mod)
 #sig, p = 0.008
 
@@ -966,7 +968,7 @@ wk <- wc_wk_centered_df %>%
   mutate(week = as.factor(week)) %>% 
   filter(week == 21)
 
-space_mod <- lm(lwc_mean ~ cw_area, data =  wk)
+space_mod <- lm(lwa_g_cm2 ~ cw_area, data =  wk)
 summary(space_mod)
 #not sig
 
@@ -978,7 +980,7 @@ wk <- wc_wk_centered_df %>%
   mutate(week = as.factor(week)) %>% 
   filter(week == 37)
 
-space_mod <- lmer(lwc_mean ~ cw_area  + (1|site), data =  wk,  REML = T)
+space_mod <- lmer(lwa_g_cm2 ~ cw_area  + (1|site), data =  wk,  REML = T)
 summary(space_mod)
 #not sig
 ```
@@ -1026,7 +1028,7 @@ space_slopes
 #TIME
 
 ```{r}
-wc_qudo_df %>% 
+wc_quag_df %>% 
   drop_na(week) %>% 
   ggplot(aes(y = cw_area, 
              x = as.factor(week), 
@@ -1041,9 +1043,9 @@ wc_qudo_df %>%
 ```
 
 ```{r, echo=FALSE, warning = F}
-time <- wc_qudo_df %>% 
+time <- wc_quag_df %>% 
   drop_na(week) %>% 
-  ggplot(aes(y = lwc_mean, 
+  ggplot(aes(y = lwa_g_cm2, 
              x = cw_area, 
              color = time_season, 
              size = week,
@@ -1080,15 +1082,15 @@ time <- wc_qudo_df %>%
   color_two_grey
 time 
 
-ggsave(here("figures", "qudo figures", "cw_area", "nice_time"), time, device = "jpg", width = 4, height = 2, dpi = 300)
+ggsave(here("figures", "quag figures", "cw_area", "nice_time"), time, device = "jpg", width = 4, height = 2, dpi = 300)
 ```
 
 
 
 ```{r, echo=FALSE}
-wc_qudo_df %>% 
+wc_quag_df %>% 
   filter(time == "pd") %>% 
-  ggplot(aes(y = lwc_mean, 
+  ggplot(aes(y = lwa_g_cm2, 
              x = cw_area, 
              color = as.factor(tree), 
              show.legend = FALSE)) +
@@ -1111,11 +1113,11 @@ Include site?
 space_df_nosite <- wc_wk_centered_df %>% 
   drop_na(site)
 
-space_mod <- lmer(lwc_mean ~ cw_area + (1|week) + (cw_area|tree), data = space_df_nosite, REML = F)
+space_mod <- lmer(lwa_g_cm2 ~ cw_area + (1|week) + (cw_area|tree), data = space_df_nosite, REML = F)
 #summary(space_mod)
 AIC(space_mod)
 
-space_mod_site <- lmer(lwc_mean ~ cw_area  + (1|week) + (cw_area|tree) + (1|site), data = space_df_nosite,  REML = F)
+space_mod_site <- lmer(lwa_g_cm2 ~ cw_area  + (1|week) + (cw_area|tree) + (1|site), data = space_df_nosite,  REML = F)
 
 AIC(space_mod_site)
 #summary(space_mod_site)
@@ -1126,22 +1128,27 @@ NO
 
 ####All time
 ```{r}
-wc_qudo_md_df <- wc_qudo_df %>% 
+wc_quag_md_df <- wc_quag_df %>% 
   filter(time == "md")
 
 #with separate periods: 
-time_season_mod <- lmer(lwc_mean ~ cw_area + time_season + (1|week) + (cw_area|tree), data = wc_qudo_md_df)
+time_season_mod <- lmer(lwa_g_cm2 ~ cw_area + time_season + (1|week) + (cw_area|tree), data = wc_quag_md_df)
 
 time_season_mod_df <- broom::tidy(time_season_mod)
 
 #with separate periods: 
-time_season_mod_int <- lmer(lwc_mean ~ cw_area*time_season + (1|week) + (cw_area|tree), data = wc_qudo_md_df)
+time_season_mod_int <- lmer(lwa_g_cm2 ~ cw_area*time_season + (1|week) + (cw_area|tree), data = wc_quag_md_df)
 
 time_season_mod_int_df <- broom::tidy(time_season_mod)
 
-time_mod <- lmer(lwc_mean ~ cw_area + (1|week) + (cw_area|tree), data = wc_qudo_md_df)
-#time_mod <- lmer(lwc_mean ~ cw_area + (cw_area|tree), data = wc_qudo_md_df)
- 
+time_mod <- lmer(lwa_g_cm2 ~ cw_area + (1|week) + (cw_area|tree), data = wc_quag_md_df)
+#time_mod <- lmer(lwa_g_cm2 ~ cw_area + (cw_area|tree), data = wc_quag_md_df)
+
+anova(time_season_mod, time_season_mod_int)
+```
+
+
+```{r}
 MuMIn::r.squaredGLMM(time_mod)
 
 summary(time_mod)
@@ -1237,267 +1244,6 @@ theme(
   #theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1))
 ```
 
-####Just linear: 
-```{r}
-lin_wc_qudo_md_df <- wc_qudo_df %>% 
-  filter(time == "md") %>% 
-  filter(time_season == "after leafout")
-  
-  
-lin_time_mod <- lmer(lwc_mean ~ cw_area + (1|week) + (cw_area|tree), data = lin_wc_qudo_md_df)
-summary(lin_time_mod)
-
-MuMIn::r.squaredGLMM(lin_time_mod)
-```
-
-
-```{r}
-lin_ran_list <- coef(lin_time_mod)
-lin_ran_list
-
-lin_tree_eff <- as.data.frame(lin_ran_list[['tree']]) %>% 
-  mutate(estimate = `(Intercept)`, 
-         slope = `cw_area`,
-         sd = sd(slope)
-         ) %>%
-  select(-`(Intercept)`, 
-          -cw_area)
-lin_tree_eff
-
-lin_ran_err_tree <- arm::se.ranef(lin_time_mod)
-
-lin_ran_err_tree <- as.data.frame(lin_ran_err_tree[['tree']]) %>% 
-  mutate(std.error = `(Intercept)`, 
-         std.error.slope = `cw_area`
-         )%>% 
-  select(-`(Intercept)`, 
-        # -cw_area
-         ) %>% 
-  tibble::rownames_to_column("tree") # Apply rownames_to_column
-
-lin_ran_df_tree_after <- bind_cols(lin_tree_eff, lin_ran_err_tree) %>% 
-  #select(-`1:47`) %>% 
-  data_frame() %>% 
-  mutate(time_season = "After Leafout")
-
-#With standard errors around estimates:
-
-#intercetps 
-lin_ran_df_tree_after%>% 
-  mutate(tree = as.factor(tree)) %>% 
- # filter(tree %in% c(14, 17, 21, 29)) %>% 
- # filter(term == "cw_area") %>% 
-  mutate(upr = estimate + (std.error), 
-         lwr = estimate - (std.error)) %>% 
-  ggplot(aes(color= tree)
-    ) + 
-  geom_point(aes(y = estimate ,x = tree), size =3) +
-    geom_point(aes(y = upr, x = tree), size = 1) +
-  geom_point(aes(y = lwr, x = tree), size = 1) +
-  #geom_line(aes(group = tree, y = tree, x = upr)) +
-  geom_segment(aes(y= lwr, 
-                   yend = upr, 
-                   x = tree, 
-                   xend = tree, 
-                   color = tree))+
-  labs(x = "Tree", 
-       color = "Tree", 
-       y = "Intercepts, AFTER LEAFOUT") +
-   # facet_wrap(~y_var_name, scales = "free") + 
-theme(
-  strip.background = element_blank(),
-  strip.text.y = element_blank(), 
-  strip.text.x = element_text(size = 18), 
- # axis.text.y = element_blank(), 
-  #axis.ticks.y = element_blank(), 
-  axis.title = element_text(size = 20), 
-  legend.title = element_text(size = 18)
-  ) +
- # geom_hline(yintercept = 0, linetype="dotted") + 
- # scale_x_continuous(breaks = seq(9, 30, by = 1)) +
-  theme(legend.position = "none")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1)) +
-  color_very_many 
-
-
-lin_ran_df_tree_after %>% 
-  mutate(tree = as.factor(tree)) %>% 
- # filter(tree %in% c(14, 17, 21, 29)) %>% 
- # filter(term == "cw_area") %>% 
-  mutate(upr = slope + (std.error.slope), 
-         lwr = slope - (std.error.slope)) %>% 
-  ggplot(aes(color= tree)
-    ) + 
-  geom_point(aes(y = slope ,x = tree), size =3) +
-    geom_point(aes(y = upr, x = tree), size = 1) +
-  geom_point(aes(y = lwr, x = tree), size = 1) +
-  #geom_line(aes(group = tree, y = tree, x = upr)) +
-  geom_segment(aes(y= lwr, 
-                   yend = upr, 
-                   x = tree, 
-                   xend = tree, 
-                   color = tree))+
-  labs(x = "Tree", 
-       color = "Tree", 
-       y = "Slope, AFTER LEAFOUT") +
-   # facet_wrap(~y_var_name, scales = "free") + 
-theme(
-  strip.background = element_blank(),
-  strip.text.y = element_blank(), 
-  strip.text.x = element_text(size = 18), 
- # axis.text.y = element_blank(), 
-  #axis.ticks.y = element_blank(), 
-  axis.title = element_text(size = 20), 
-  legend.title = element_text(size = 18)
-  ) +
- # geom_hline(yintercept = 0, linetype="dotted") + 
- # scale_x_continuous(breaks = seq(9, 30, by = 1)) +
-  theme(legend.position = "none")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1)) +
-  color_very_many 
-
-lin_ran_df_tree_after %>% 
-  ggplot(aes(x = slope))+
-  #geom_histogram() +
-  geom_density()
-```
-####Before leafout: 
-
-Not enough obs
-```{r, eval = F}
-bef_wc_qudo_md_df <- wc_qudo_df %>% 
-  filter(time == "md") %>% 
-  filter(time_season == "before leafout") %>% 
-  drop_na(site)
-  
-  
-bef_time_mod <- lmer(lwc_mean ~ cw_area + (1|week) + (cw_area|tree), data = bef_wc_qudo_md_df, REML = T)
-summary(bef_time_mod)
-
-
-MuMIn::r.squaredGLMM(bef_time_mod)
-
-bef_ran_list <- coef(bef_time_mod)
-
-bef_tree_eff <- as.data.frame(bef_ran_list[['tree']]) %>% 
-  mutate(estimate = `(Intercept)`, 
-         slope = `cw_area`, 
-         sd = sd(slope)
-         ) %>%
-  select(-`(Intercept)`, 
-          -cw_area)
-bef_tree_eff
-
-bef_ran_err_tree <- arm::se.ranef(bef_time_mod)
-
-bef_ran_err_tree <- as.data.frame(bef_ran_err_tree[['tree']]) %>% 
-  mutate(std.error = `(Intercept)`, 
-         std.error.slope = `cw_area`
-         )%>% 
-  select(-`(Intercept)`, 
-         -cw_area
-         ) %>% 
-  tibble::rownames_to_column("tree") # Apply rownames_to_column
-
-bef_ran_df_tree_before <- bind_cols(bef_tree_eff, bef_ran_err_tree) %>% 
-  #select(-`1:47`) %>% 
-  data_frame()%>% 
-  mutate(time_season = "Before Leafout")
-
-bef_ran_df_tree_before %>% 
-  mutate(tree = as.factor(tree)) %>% 
- # filter(tree %in% c(14, 17, 21, 29)) %>% 
- # filter(term == "cw_area") %>% 
-  mutate(upr = slope + (std.error.slope), 
-         lwr = slope - (std.error.slope)) %>% 
-  ggplot(aes(color= tree)
-    ) + 
-  geom_point(aes(y = slope ,x = tree), size =3) +
-    geom_point(aes(y = upr, x = tree), size = 1) +
-  geom_point(aes(y = lwr, x = tree), size = 1) +
-  #geom_line(aes(group = tree, y = tree, x = upr)) +
-  geom_segment(aes(y= lwr, 
-                   yend = upr, 
-                   x = tree, 
-                   xend = tree, 
-                   color = tree))+
-  labs(x = "Tree", 
-       color = "Tree", 
-       y = "Slope, BEFORE LEAFOUT") +
-   # facet_wrap(~y_var_name, scales = "free") + 
-theme(
-  strip.background = element_blank(),
-  strip.text.y = element_blank(), 
-  strip.text.x = element_text(size = 18), 
- # axis.text.y = element_blank(), 
-  #axis.ticks.y = element_blank(), 
-  axis.title = element_text(size = 20), 
-  legend.title = element_text(size = 18)
-  ) +
- # geom_hline(yintercept = 0, linetype="dotted") + 
- # scale_x_continuous(breaks = seq(9, 30, by = 1)) +
-  theme(legend.position = "none")+
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust=1)) #+
- # color_very_many 
-
-bef_ran_df_tree_before %>% 
-  ggplot(aes(x = slope))+
-  #geom_histogram() +
-  geom_density()
-```
-
-####Slopes, SE, pre- and post-
-
-```{r, eval = F}
-ran_df_tree_before_vs_after <- bind_rows(bef_ran_df_tree_before, lin_ran_df_tree_after)
-
-ef <- ran_df_tree_before_vs_after %>% 
-  group_by(time_season) %>% 
-  mutate(sd = sd(slope),
-         slope = mean(slope), 
-         mean_se = mean(std.error.slope),
-        mean_std.error = mean(std.error),
-        upr_sd = slope + mean_std.error,
-        lwr_sd = slope - mean_std.error,
-         upr = slope + mean_se,
-         lwr = slope - mean_se,
-         time_season = as.factor(time_season)) 
-# %>% 
-#   select(slope, upr, lwr, time_season, sd)
-
-time_summary <- ef %>% 
-ggplot() + 
-  geom_point(aes(y = slope, x = time_season), size =3) +
-    geom_point(aes(y = upr, x = time_season), size = 1) +
-  geom_point(aes(y = lwr, x = time_season), size = 1) +
-  #geom_line(aes(group = tree, y = tree, x = upr)) +
-  geom_segment(aes(y= lwr, 
-                   yend = upr, 
-                   x = time_season, 
-                   xend = time_season)) +
-  labs(y = "Mean Slope +/- SE acrss all trees
-            for each time frame", 
-       x = "Time")
-time_summary
-
-time_summary_sd <- ef %>% 
-ggplot() + 
-  geom_point(aes(y = slope, x = time_season), size =3) +
-    geom_point(aes(y = upr_sd, x = time_season), size = 1) +
-  geom_point(aes(y = lwr_sd, x = time_season), size = 1) +
-  #geom_line(aes(group = tree, y = tree, x = upr)) +
-  geom_segment(aes(y= lwr_sd, 
-                   yend = upr_sd, 
-                   x = time_season, 
-                   xend = time_season)) +
-  labs(y = "Mean Slope +/- SD acrss all trees
-            for each time frame", 
-       x = "Time")
-time_summary_sd
-
-ggsave(here("figures", "qudo figures", "cw_area", "time_summary_slopes"), time_summary, device = "jpg", width = 2.5, height = 3, dpi = 300)
-```
-
 ##Slopes, bootstrapping - inds
  
 ```{r}
@@ -1519,7 +1265,7 @@ ggplot() +
 time_summary_bs_tree
 
 
-ggsave(here("figures", "qudo figures", "cw_area", "time_summary_slopes_boot_tree"), time_summary_bs_tree, device = "jpg", width = 2.5, height = 3, dpi = 300)
+ggsave(here("figures", "quag figures", "cw_area", "time_summary_slopes_boot_tree"), time_summary_bs_tree, device = "jpg", width = 2.5, height = 3, dpi = 300)
 ```
 
 #MODELS
@@ -1557,7 +1303,7 @@ cw_area_mods <- bind_rows(space_mod_df <- space_mod_df %>% mutate(mod = "space")
 cw_area_mods
 
 
-write_csv(cw_area_mods, here::here("processed-data", "model results", "cw_area_lwc_mods.csv"))
+write_csv(cw_area_mods, here::here("processed-data", "model results", "cw_area_lwa_mods.csv"))
 ```
 
 #----------
@@ -1878,10 +1624,10 @@ time_summary
 #scaled
 space_nice_1 <- df %>% 
   filter(time == "md") %>% 
-  select(tree, week, lwc_mean, cw_area) %>% 
+  select(tree, week, lwa_g_cm2, cw_area) %>% 
   distinct() %>% 
-  drop_na(cw_area, lwc_mean) %>% 
-  ggplot(aes(y = lwc_mean, 
+  drop_na(cw_area, lwa_g_cm2) %>% 
+  ggplot(aes(y = lwa_g_cm2, 
             x = cw_area,
              color = as.factor(week)
              )) +
@@ -1935,7 +1681,7 @@ time_1 <- df %>%
   filter(time == "Midday") %>% 
   drop_na(week) %>% 
  # filter(time == "md") %>% 
-  ggplot(aes(y = lwc_mean, 
+  ggplot(aes(y = lwa_g_cm2, 
              x = cw_area, 
              color = time_season, 
              size = week,
@@ -1983,7 +1729,7 @@ time_1
 ```{r}
 legend_plot <- df  %>% 
   ungroup() %>% 
-  add_row(date_wp = as.Date("2022-05-03"), time = "md", cw_area = .05, lwc_mean = -.3) %>% 
+  add_row(date_wp = as.Date("2022-05-03"), time = "md", cw_area = .05, lwa_g_cm2 = -.3) %>% 
   filter(date_wp %in% c("2022-03-08",
          "2022-03-15", 
          "2022-03-25",
@@ -2005,7 +1751,7 @@ legend_plot <- df  %>%
   filter(time == "Midday") %>% 
   filter(!(week == 9)) %>% 
   drop_na(week) %>% 
-  ggplot(aes(y = lwc_mean,
+  ggplot(aes(y = lwa_g_cm2,
              x = cw_area,
              color = as.factor(week), 
             # shape = as.factor(time),
@@ -2150,5 +1896,5 @@ combined_plots_all_legend <- grid.arrange(arrangeGrob(combined_plots_all,
                                 widths = c(1, .02)))
 combined_plots_all_legend
 
-ggsave(here("figures", "qudo figures", "cw_area", "combined_plots_all_qudo_lwc_bs"), combined_plots_all_legend, device = "jpg", width = 10, height = 7, dpi = 300)
+ggsave(here("figures", "quag figures", "cw_area", "combined_plots_all_quag_lwa_bs"), combined_plots_all_legend, device = "jpg", width = 10, height = 7, dpi = 300)
 ```
