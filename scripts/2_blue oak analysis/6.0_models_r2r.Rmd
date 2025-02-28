@@ -235,7 +235,14 @@ model_lma <- lmer(cwc ~ lma_g_cm2 + (1 | tree), data = df_filtered) #Does LMA?
 model_time_season <- lmer(cwc ~ time_season + (1 | tree), data = df_filtered) #Does just being before vs. after leafout?
 model_lwa <- lmer(cwc ~ lwa_g_cm2 + (1 | tree), data = df_filtered) #Does LWA? This is the ground level analogue to CWC, so it probably should if CWC actually captures leaf water... 
 model_lwc <- lmer(cwc ~ lwc_mean + (1 | tree), data = df_filtered) #Does LWC?
+```
+```{r}
+library(car)
+qqp(resid(model_cwc))
+```
 
+
+```{r}
 # List of models
 models <- list(
   lwa_lai = model_lwa_lai,
