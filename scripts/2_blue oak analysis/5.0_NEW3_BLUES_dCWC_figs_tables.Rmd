@@ -2193,7 +2193,7 @@ dcwc_plot <- filtered_data %>%
   color_very_many +
   theme(plot.margin = unit(c(0.5, 0.5, 0, 0.5), "cm"), 
         plot.title = element_text(size = 20, face = "bold")) +
-  ggtitle("Q. douglassii")
+  ggtitle("Q. douglasii")
 dcwc_plot
 
 # Plot 2: dcwc_mpa_plot with separate R-squared annotations and distinct labels
@@ -2260,7 +2260,11 @@ dcwc_mpa_plot <- fig_data1 %>%
   color_before_after +
   geom_text(
     aes(label = "B"),
-    x = -Inf, y = Inf, hjust = -0.2, vjust = 1.5, size = 6, fontface = "bold",
+    x = -Inf, y = Inf, 
+    hjust = .5, 
+    vjust = 1.5, 
+    size = 6, 
+    fontface = "bold",
     inherit.aes = FALSE
   ) +
   theme(legend.position=c(.135,.90))

@@ -14,7 +14,6 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE)
 library(tidyverse)
 library(boot)
 source(here::here("scripts", "scripts_functions", "figure_info.R"))
-
 library(data.table)
 library(janitor)
 library(here)
@@ -43,23 +42,72 @@ dataversion <- paste0("Data_", datver)
 
 #DATA
 
-```{r}
-#CWC data: 
-data_og_cwc <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".csv")), show_col_types = F) %>%  
+```{r, eval = F}
+#JEans new wavelength data:
+# Define the folder path containing the CSVs
+folder_path <- here::here("processed-data", "SHIFT_data", "cwc_1100_1300")
+
+# List all CSV files in the folder
+csv_files <- list.files(folder_path, pattern = "\\.csv$", full.names = TRUE)
+
+# Function to read each CSV and add a column with numbers extracted from the filename
+read_and_label <- function(file) {
+  df <- read_csv(file)
+  # Extract numbers from the filename
+  file_number <- str_extract(basename(file), "\\d+")
+  # Add new column with extracted numbers
+  df <- df %>% mutate(file_number = file_number)
+  return(df)
+}
+
+# Read and combine all CSVs
+data_jean_cwcdf0  <- map_df(csv_files, read_and_label) 
+
+data_jean_cwcdf <- data_jean_cwcdf0 %>% 
+  clean_names() %>% 
+  mutate(date = file_number, 
+         date_shift = ymd(date), 
+         tree = tree_number) %>% 
+  select(tree, date_shift, cwc)
+
+data_og_cwc0 <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".csv")), show_col_types = F) %>%  
   filter(species %in% c("blue oak")) %>% 
-  select(tree, week, water_potential, cwc, time_season, time, site, date_wp, date_shift) %>% 
+  select(tree, week, water_potential, time_season, time, site, date_wp, date_shift) %>% 
   mutate(water_potential = -1*water_potential) %>% 
   distinct() %>% 
+  filter(!(tree %in% c(2346))) %>% 
+  filter(!week %in% c(11, 9, 18)) 
+
+
+data_og_cwc <- merge(data_og_cwc0, data_jean_cwcdf, by = c("tree", "date_shift"), all.x = TRUE)
+
+unique(data_og_cwc2$date_shift)
+```
+
+
+```{r}
+#CWC data:
+data_og_cwc <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".csv")), show_col_types = F) %>%
+  filter(species %in% c("blue oak")) %>%
+  select(tree, week, water_potential, cwc, time_season, time, site, date_wp, date_shift) %>%
+  mutate(water_potential = -1*water_potential) %>%
+  distinct() %>%
   #filter(cwc > 0) %>% #to try running with CWC = 0.
-   # filter(!tree %in% c(2012, 2011)) %>% 
-  filter(!(tree %in% c(2346))) %>% #this tree seems to have a problem with post-leafout cwc - all 0s - likely becuase the canopy was too small to see. 
-  filter(!week %in% c(11, 9, 18)) #week 11 only has 9 midday measurements and acts really odd (2022-03-15), 9 just had 3 measurements 
+   # filter(!tree %in% c(2012, 2011)) %>%
+  filter(!(tree %in% c(2346))) %>% #this tree seems to have a problem with post-leafout cwc - all 0s - likely becuase the canopy was too small to see.
+  filter(!week %in% c(11, 9, 18)) #week 11 only has 9 midday measurements and acts really odd (2022-03-15), 9 just had 3 measurements
+
+unique(data_og_cwc$date_shift)
 
 data_og_cwc%>% 
   filter(time == "md") %>% 
+  drop_na(date_shift) %>% 
   group_by(week, date_shift) %>% 
   summarise(n = n())
+```
 
+
+```{r}
 ##LMA, LWA, LWC data: 
 data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
  # filter(time %in% c("md")) %>% 
@@ -1147,7 +1195,7 @@ library(emmeans)
 emmeans(mod, list(pairwise ~ week), adjust = "tukey")
 ```
 
-```{r}
+```{r, eval = F}
 unique(wc_wk_centered_df$week)
 
 #week 10: 
@@ -2387,7 +2435,7 @@ combined_slopes_wide <- cowplot::plot_grid(time_summary, NULL, space_slope_bs,
                                                  ), 
                                   labels = c("C", "", "D"#,"", "G"
                                              ),
-                                  label_x = .1,
+                                  label_x = .105,
                                   hjust= c(0, 0, 0),
                                   label_y = .98
                                   # rel_heights = c(.15, 1, .3), 
@@ -2451,7 +2499,10 @@ combined_plots_all_legend <- grid.arrange(arrangeGrob(combined_plots_all,
                                 widths = c(1, .02)))
 combined_plots_all_legend
 
-ggsave(here("figures", "qudo figures", "CWC", "combined_plots_all_qudo_bs"), combined_plots_all_legend, device = "jpg", width = 10, height = 7, dpi = 300)
+ggsave(here("figures", "qudo figures", "CWC", "combined_plots_all_qudo_bs.jpg"), 
+       combined_plots_all_legend, 
+       device = "jpeg", 
+       width = 10, height = 7, dpi = 300)
 ```
 
 #-----------------
