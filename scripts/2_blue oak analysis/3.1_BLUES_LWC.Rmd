@@ -1097,7 +1097,7 @@ summary(m_wk_rand_nosite)
 m_wk_rand <- lmer(water_potential ~ lwc_mean + (lwc_mean|tree) + (lwc_mean|week) + (1|site), data = wk_all_sites, REML = T)
 #m_wk_rand_site
 
-hyd_mod_df <- broom::tidy(m_wk_rand)
+hyd_mod_df <- broom.mixed::tidy(m_wk_rand)
 ```
 
 ####Slopes, bootstrapped:
@@ -1277,7 +1277,7 @@ space_mod_df <- broom.mixed::glance(space_mod1)
 
 ###Which weeks are significant?
 
-```{r}
+```{r, eval = F}
 #week 10: 
 wk <- wc_qudo_df %>% 
   drop_na(site) %>% 
@@ -1594,7 +1594,7 @@ lma_mod_time_int <- lmer(water_potential ~ lma_g_cm2*time_season + (1|week) + (l
 lma_mod_time_int
 
 broom.mixed::glance(lma_mod_time_int)
-r.squaredGLMM(lma_mod_time) 
+r.squaredGLMM(lma_mod_time_int) 
 
 lma_mod_time <- lmer(water_potential ~ lma_g_cm2 + time_season + (1|week) + (lma_g_cm2|tree), data = data_qudo_lma)
 lma_mod_time
@@ -2681,7 +2681,7 @@ combined_plots_all <- cowplot::plot_grid(
 
 combined_plots_all
 
-ggsave(here("figures", "qudo figures", "LWC", "combined_plots_all_qudo_bs"), combined_plots_all, device = "jpg", width = 12, height = 7, dpi = 300)
+ggsave(here("figures", "qudo figures", "LWC", "combined_plots_all_qudo_bs.jpg"), combined_plots_all, device = "jpg", width = 12, height = 7, dpi = 600)
 ```
 
 
@@ -2824,7 +2824,7 @@ lma_mpa_plot <- lma_mpa_df %>%
 scale_y_continuous(labels = scales::number_format(accuracy = 0.1))
 lma_mpa_plot
 
-ggsave(here("figures", "qudo figures", "LWC", "lma_mpa_plot"), lma_mpa_plot, device = "jpg", width = 6, height = 4, dpi = 300)
+ggsave(here("figures", "qudo figures", "LWC", "lma_mpa_plot.jpg"), lma_mpa_plot, device = "jpg", width = 6, height = 4, dpi = 600)
 ```
 
 
@@ -3010,6 +3010,6 @@ lma_mpa_plot <- lma_df %>%
 scale_y_continuous(labels = scales::number_format(accuracy = 0.1))
 lma_mpa_plot
 
-ggsave(here("figures", "quag figures", "LWC", "lma_mpa_plot"), lma_mpa_plot, device = "jpg", width = 6, height = 4, dpi = 300)
+ggsave(here("figures", "quag figures", "LWC", "lma_mpa_plot.jpg"), lma_mpa_plot, device = "jpg", width = 6, height = 4, dpi = 600)
 ```
 

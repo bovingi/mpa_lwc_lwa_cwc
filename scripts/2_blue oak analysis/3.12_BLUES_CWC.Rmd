@@ -2502,7 +2502,7 @@ combined_plots_all_legend
 ggsave(here("figures", "qudo figures", "CWC", "combined_plots_all_qudo_bs.jpg"), 
        combined_plots_all_legend, 
        device = "jpeg", 
-       width = 10, height = 7, dpi = 300)
+       width = 10, height = 7, dpi = 600)
 ```
 
 #-----------------

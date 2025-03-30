@@ -68,6 +68,14 @@ pv_new_rr_df <- pv_new_rr_raw %>%
   select(unique_id, date, water_potential, lwc, lma, lwa, rwc, rwd, swc, rehydrated) %>%
   mutate(week = week(date)) %>% 
   filter(date %in% c("2023-07-27"))
+
+df <- pv_new_rr_raw %>% 
+  filter(rehydrated == "yes" & pd_or_md == "pd") %>% 
+  dplyr::mutate(mean_tlp = mean(tlp, na.rm = T)) %>% 
+  dplyr::mutate(sd_tlp = sd(tlp, na.rm = T)) %>% 
+  select(mean_tlp, sd_tlp) %>% 
+  distinct()
+df
 ```
 
 

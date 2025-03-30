@@ -2157,7 +2157,7 @@ final_plot <- dcwc_plot/ dcwc_mpa_plot +
 print(final_plot)
 
 # Save plot
-ggsave(here::here("figures", "qudo figures", "dcwc_SI.jpg"), plot = final_plot, width = 8, height = 8)
+ggsave(here::here("figures", "qudo figures", "dcwc_SI.jpg"), plot = final_plot, width = 8, height = 8, dpi = 600)
 ```
 
 #TO COMBINE: 
@@ -2185,10 +2185,14 @@ dcwc_plot <- filtered_data %>%
   ggplot(aes(y = cwc, x = date_wp, color = as.factor(tree))) + 
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, size = 0.5) +
-  labs(y = "CWC (g/cm2)", x = "Date") +
+  #labs(y = "CWC (g/cm2)", x = "Date") +
+    labs(
+    y = "",
+    x = ""
+  ) +
   common_theme +
   annotate("text", x = as.Date("2022-03-05"), y = 0.13, 
-            hjust = 1.5, vjust = 1, 
+            hjust = 1, vjust = 1,
            label = "B", size = 6, fontface = "bold") +
   color_very_many +
   theme(plot.margin = unit(c(0.5, 0.5, 0, 0.5), "cm"), 
@@ -2239,37 +2243,6 @@ fig_data1 <- merge(dcwc_allanalyses_new %>%
          )   # Convert r_squared to numeric
   #select(slope, water_potential, time, date_wp, analysis, r_squared) %>%
 
-
-
-dcwc_mpa_plot <- fig_data1 %>% 
-  filter(variable %in% c("water_potential")) %>% 
-  ggplot(aes(y = value, 
-             x = slope, 
-             shape = time,
-             color = time)) + 
-  geom_point() +
-  geom_smooth(method = "lm", se = FALSE, size = 0.5) +
- # facet_wrap(~date_wp, ncol = 2, labeller = label_value) +  # Show date without "date_wp:"
-  labs(
-    y = "Mean Water potential (Psi)", 
-    color = "Time",
-    shape = "Time",
-    x = "dCWC"
-  ) +
-  common_theme +
-  color_before_after +
-  geom_text(
-    aes(label = "B"),
-    x = -Inf, y = Inf, 
-    hjust = .5, 
-    vjust = 1.5, 
-    size = 6, 
-    fontface = "bold",
-    inherit.aes = FALSE
-  ) +
-  theme(legend.position=c(.135,.90))
-dcwc_mpa_plot
-
 # Calculate R-squared values for each group
 r_squared_data <- fig_data1 %>%
   filter(variable == "water_potential") %>%
@@ -2289,11 +2262,17 @@ dcwc_mpa_plot <- fig_data1 %>%
              color = time)) + 
   geom_point() +
   geom_smooth(method = "lm", se = FALSE, size = 0.5) +
+  # labs(
+  #   y = "Mean Water Potential (\U03A8)", 
+  #   color = "Time",
+  #   shape = "Time",
+  #   x = "dCWC"
+  # ) +
   labs(
-    y = "Mean Water Potential (\U03A8)", 
+    y = "",
     color = "Time",
     shape = "Time",
-    x = "dCWC"
+    x = ""
   ) +
   common_theme +
   color_before_after +
@@ -2318,7 +2297,7 @@ dcwc_mpa_plot <- fig_data1 %>%
     # data = fig_data %>% filter(date_wp == "2022-03-08", variable == "water_potential",
     #      analysis == "dcwc_alldata"),
     aes(label = "D"),
-    x = -Inf, y = Inf, hjust = -0.2, vjust = 1.5, size = 6, fontface = "bold",
+    x = -Inf, y = Inf, hjust = -0.5, vjust = 1.5, size = 6, fontface = "bold",
     inherit.aes = FALSE
   ) 
 
@@ -2331,5 +2310,5 @@ final_plot <- dcwc_plot/ dcwc_mpa_plot +
 print(final_plot)
 
 # Save plot
-ggsave(here::here("figures", "qudo figures", "dcwc_combinespp_SI.jpg"), plot = final_plot, width = 6.5, height = 8)
+ggsave(here::here("figures", "qudo figures", "dcwc_combinespp_SI.jpg"), plot = final_plot, width = 6.5, height = 8, dpi = 600)
 ```

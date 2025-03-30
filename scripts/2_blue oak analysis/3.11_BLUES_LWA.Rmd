@@ -2499,6 +2499,6 @@ combined_plots_all <- cowplot::plot_grid(
 combined_plots_all
 
 
-ggsave(here("figures", "qudo figures", "LWA", "combined_plots_all_qudo_new.jpg"), combined_plots_all, device = "jpeg", width = 12, height = 8, dpi = 300)
+ggsave(here("figures", "qudo figures", "LWA", "combined_plots_all_qudo_new.jpg"), combined_plots_all, device = "jpeg", width = 12, height = 8, dpi = 600)
 ```
 
