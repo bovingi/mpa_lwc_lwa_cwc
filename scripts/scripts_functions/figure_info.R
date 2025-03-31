@@ -132,8 +132,6 @@ pal.10 <- met.brewer("Cross")
 mycolors.10 <- colorRampPalette(pal)(nb.cols.10)
 mycolors.10
 
-
-
 color_many <- scale_color_manual(values = c(Cross_rev))
 
 cross_discrete =  MetBrewer::met.brewer("Cross", type="discrete")
