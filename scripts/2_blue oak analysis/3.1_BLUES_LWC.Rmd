@@ -2741,6 +2741,6 @@ lma_mpa_plot <- lma_df %>%
 scale_y_continuous(labels = scales::number_format(accuracy = 0.1))
 lma_mpa_plot
 
-ggsave(here("figures", "quag figures", "LWC", "lma_mpa_plot.jpg"), lma_mpa_plot, device = "jpg", width = 6, height = 4, dpi = 600)
+ggsave(here("figures", "qudo figures", "LWC", "lma_mpa_plot.jpg"), lma_mpa_plot, device = "jpg", width = 6, height = 4, dpi = 600)
 ```
 
