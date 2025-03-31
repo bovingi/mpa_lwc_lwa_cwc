@@ -283,7 +283,7 @@ top_models <- model_summary %>% filter(AIC <= min_aic + 10) %>%
   arrange(delta_AIC)
 
 # Save final table
-write_csv(top_models, here("processed-data", "model results", "qudo_top_models_cwc.csv"))
+#write_csv(top_models, here("processed-data", "model results", "qudo_top_models_cwc.csv"))
 
 # Print the table
 print(top_models)
@@ -410,7 +410,7 @@ top_models <- model_summary %>% filter(AIC <= min_aic + 50) %>%
 
 
 # Save final table
-write_csv(top_models, here("processed-data", "model results", "qudo_top5_mems_mpa_middays.csv"))
+#write_csv(top_models, here("processed-data", "model results", "qudo_top5_mems_mpa_middays.csv"))
 
 # Print the table
 print(top_models)
@@ -513,7 +513,7 @@ top_models <- model_summary %>% filter(AIC <= min_aic + 50) %>%
 
 
 # Save final table
-write_csv(top_models, here("processed-data", "model results", "qudo_top5_mems_mpa_middays.csv"))
+#write_csv(top_models, here("processed-data", "model results", "qudo_top5_mems_mpa_middays.csv"))
 
 # Print the table
 print(top_models)
@@ -617,7 +617,7 @@ top_models <- model_summary %>% filter(AIC <= min_aic + 50) %>%
 
 
 # Save final table
-write_csv(top_models, here("processed-data", "model results", "qudo_top5_mems_mpa_middays.csv"))
+#write_csv(top_models, here("processed-data", "model results", "qudo_top5_mems_mpa_middays.csv"))
 
 # Print the table
 print(top_models)
@@ -656,11 +656,6 @@ plot(fitted(model_cwc_time), residuals(model_cwc_time),
 
 # SPACE vs. TIME CWC.
 
-Is this the correct way to use random effects? How to show this in
-paper, if we include it? New SI table or main text table?
-
-What are the best predictors of CWC over space and time?
-
 ```{r}
 #TIME: 
 model_lwa_lai_time <- lmer(cwc ~ lwa_g_cm2 * lai + (lwa_g_cm2 | tree) + (lai | tree), data = df_filtered) #random slope and intercept for LWA and LAI for each tree over time
@@ -671,6 +666,4 @@ model_lwa_lai_space <- lmer(cwc ~ lwa_g_cm2 * lai + (lwa_g_cm2 | week) + (lai | 
 model_lwc_lma_lai_space <- lmer(cwc ~ lwc_mean * lma_g_cm2 * lai + (lwa_g_cm2 | week) + (lai | week), data = df_filtered) #random slope and intercept for LWC, LMA, and LAI for all trees in a given sample date
 
 #DIEL not possible with CWC.
-
-
 ```
