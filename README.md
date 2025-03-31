@@ -25,6 +25,6 @@ Figures are written to the 'figures' folder, which is organized by analysis metr
 
 This GitHub repository was worked on by Indra Boving
 
-Indra Boving*: bovingi@ucsb.ed
+Indra Boving*: bovingi@ucsb.edu
 
 **correspondence*
