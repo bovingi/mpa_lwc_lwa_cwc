@@ -1458,7 +1458,7 @@ final_plot <- dcwc_plot / dcwc_mpa_plot +
 print(final_plot)
 
 # Save plot
-ggsave(here::here("figures", "qudo figures", "dcwc_SI.jpg"), plot = final_plot, width = 8, height = 8)
+ggsave(here::here("figures", "qudo figures", "dcwc_SI.jpg"), plot = final_plot, width = 8, height = 8, dpi = 600)
 ```
 
 
