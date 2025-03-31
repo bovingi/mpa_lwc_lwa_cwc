@@ -39,7 +39,7 @@ source(here::here("scripts", "scripts_functions", "figure_info.R"))
 #DATA 
 ```{r}
 wc_all_raw <- read_csv(here("processed-data", paste0("analysis",datver,".csv")), show_col_types = F) %>% 
-  filter(!(week %in% 33)) #week 33 is screwy for LWA for some reason, remove for now 
+  filter(!(week %in% 33)) #week 33 is screwy for LWA for some reason, remove. We do this in the main analysis too. Likely issue with scanning or scale not being tared. 
 ```
 
 Before leafout: 
@@ -162,10 +162,7 @@ qudo_wc_linear <- wc_all_raw %>%
 
 qudo_wc_all <- bind_rows(qudo_wc_linear, qudo_wc_full) %>% 
   distinct
-```
 
-
-```{r}
 nice_all <- qudo_wc_all %>% 
    ggplot(aes(y = water_potential, 
              x = lwc_mean, 
@@ -179,9 +176,7 @@ nice_all <- qudo_wc_all %>%
        color = "Week") +
   theme(legend.position = "none") 
 nice_all
-```
 
-```{r}
 lin_nice <- qudo_wc_linear %>% 
   ggplot(aes(y = water_potential, 
              x = lwc_mean, 
@@ -196,9 +191,7 @@ lin_nice <- qudo_wc_linear %>%
        color = "Week") +
   theme(legend.position = "none") 
 lin_nice
-```
 
-```{r}
 together <- cowplot::plot_grid( full_nice, 
                                 lin_nice,
                                ncol = 1, 
@@ -305,7 +298,7 @@ vdc2_plot_lwc <- vdc2 %>% ggplot(aes(x = dataset,
   
 vdc2_plot_lwc
 
-ggsave(here("figures",  "qudo figures", "LWC",  "vdc2_plot"), vdc2_plot_lwc, device = "jpg", width = 5.5, height = 7, dpi = 300)
+#ggsave(here("figures",  "qudo figures", "LWC",  "vdc2_plot"), vdc2_plot_lwc, device = "jpg", width = 5.5, height = 7, dpi = 300)
 ```
 
 #LMA over time: 
@@ -348,7 +341,7 @@ vardecomp_lma_plot <- cowplot::plot_grid(vdc2_plot_lwc, lma_plot,
 
 vardecomp_lma_plot
 
-ggsave(here("figures", "qudo figures", "LWC", "vardecomp_lma_plot"), vardecomp_lma_plot, device = "jpg", width = 12, height = 5, dpi = 300)
+#ggsave(here("figures", "qudo figures", "LWC", "vardecomp_lma_plot"), vardecomp_lma_plot, device = "jpg", width = 12, height = 5, dpi = 300)
 ```
 
 #-------------------
@@ -478,64 +471,6 @@ qudo_wc_all <- bind_rows(qudo_wc_linear, qudo_wc_full) %>%
   distinct
 ```
 
-
-```{r}
-nice_all <- qudo_wc_all %>% 
-   ggplot(aes(y = water_potential, 
-             x = lwa_g_cm2_new, 
-             color = week)) +
-  geom_point() +
-#  geom_smooth(method = "lm", se = F, color = "black") +
-  facet_wrap(~section, scales = "free") +
-  color_grad +
-  labs(y = "Water Potential", 
-       x = "lwa_g_cm2_new", 
-       color = "Week") +
-  theme(legend.position = "none") 
-nice_all
-
-nice_all <- wc_all_raw  %>% 
-   ggplot(aes(y = water_potential, 
-             x = lwa_g_cm2_new
-             , 
-             color = week)) +
-  geom_point() +
-#  geom_smooth(method = "lm", se = F, color = "black") +
-  #facet_wrap(~section, scales = "free") +
-  color_grad +
-  labs(y = "Water Potential", 
-       x = "lwa_g_cm2_new", 
-       color = "Week") +
-  theme(legend.position = "none") 
-nice_all
-```
-
-```{r}
-plotly::ggplotly(lin_nice <- qudo_wc_linear %>% 
-  ggplot(aes(y = water_potential, 
-             x = lwa_g_cm2_new, 
-             color = week, 
-             label = tree)) +
-  geom_point() +
-  geom_smooth(method = "lm", 
-              se = F, 
-              color = "black") +
-  color_grad +
-  labs(y = "", 
-       x = "", 
-       color = "Week") +
-  theme(legend.position = "none")) 
-lin_nice
-```
-
-```{r}
-together <- cowplot::plot_grid( full_nice, 
-                                lin_nice,
-                               ncol = 1, 
-                               rel_heights = c(1, 1))
-together
-```
-
 #####Whole df: 
 ```{r}
 #alternative method with random effects
@@ -633,7 +568,7 @@ vdc2_plot <- vdc2_lwa %>% ggplot(aes(x = dataset,
   
 vdc2_plot
 
-ggsave(here("figures", "qudo figures", "LWA", "vdc2_lwa_new_plot"), vdc2_plot, device = "jpg", width = 5.5, height = 7, dpi = 300)
+#ggsave(here("figures", "qudo figures", "LWA", "vdc2_lwa_new_plot"), vdc2_plot, device = "jpg", width = 5.5, height = 7, dpi = 300)
 ```
 
 #---------------
@@ -716,6 +651,6 @@ combined_plot2 <- cowplot::plot_grid(legend,  combined_plot,
                                    ) 
 combined_plot2
 
-ggsave(here("figures", "qudo figures", "vardecomp_combined"), combined_plot2, device = "jpg", width = 7, height = 5, dpi = 300)
+#ggsave(here("figures", "qudo figures", "vardecomp_combined"), combined_plot2, device = "jpg", width = 7, height = 5, dpi = 600)
 ```
 
