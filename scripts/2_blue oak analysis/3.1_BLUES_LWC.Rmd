@@ -2483,10 +2483,6 @@ ggsave(here("figures", "qudo figures", "LWC", "combined_plots_all_qudo_bs.jpg"),
 
 #LMA by MPa: 
 
-
-#Stats
-Using LMA from scannings leaves used for LWC: (this will have higher sample size and no repeated Al:As data!)
-
 - PD and MD together with time as a predictor: 
 
 ```{r}
@@ -2555,8 +2551,102 @@ marginal_r2_md
 ```
 
 ```{r}
-lma_mpa_df %>% 
-  drop_na(lma_g_cm2_new, mean_mpa)
+library(lmerTest) #this gives you a p value
+
+lma_df <- lma_mpa_df %>% 
+  #filter(lma_g_cm2_new < 0.025) %>% 
+  drop_na(lma_g_cm2_new, mean_mpa) %>% 
+  select(-week) %>% 
+  distinct()
+#PD alone: 
+
+lma_mpa_df_pd <- lma_df %>% 
+  filter(time == "pd")
+
+m2 <- lmer(mean_mpa ~ lma_g_cm2_new + (1|tree), data = lma_mpa_df_pd, REML = T)
+library(lmerTest) #this gives you a p value
+m2
+#m2 <- lm(mean_mpa ~ lma_g_cm2_new + week, data = lma_mpa_df_pd, REML = F)
+summary(m2)
+MuMIn::r.squaredGLMM(m2)
+
+#Store the R-squared of the 'better' model
+marginal_r2_pd <- round(MuMIn::r.squaredGLMM(m2)[1], digits = 3)
+marginal_r2_pd
+
+
+#For just MDs:
+lma_mpa_df_md <- lma_df %>% 
+  filter(time == "md")
+#just mds: 
+m2 <- lmer(mean_mpa ~ lma_g_cm2_new + (1|tree), data = lma_df, REML = T)
+
+summary(m2)
+MuMIn::r.squaredGLMM(m2)
+
+#Store the R-squared of the 'better' model
+marginal_r2_md <- round(MuMIn::r.squaredGLMM(m2)[1], digits = 3)
+marginal_r2_md
+
+
+lma_mpa_plot <- lma_df %>% 
+  ggplot(aes(#y = water_potential, 
+             y =-1*mean_mpa,
+            x = lma_g_cm2_new,
+             color = as.factor(time),
+            shape = time
+             )) +
+  geom_point(alpha = 1, 
+            # aes (shape = site)
+             ) +
+annotate(geom = "text", 
+         x = .01, 
+         y = -4.75, 
+         color =  "#165E6F",
+         label = bquote(R^2 == .(marginal_r2_pd))) +
+annotate(geom = "text", 
+         x = .01, 
+         y = -5, 
+         color = "#CC5265",
+         label = bquote(R^2 == .(marginal_r2_md))) +
+  theme(#legend.position="top",
+        legend.position= c(.85, .85),
+        legend.background = element_blank(),
+      strip.background = element_blank(),
+      strip.text.x = element_text(size = 12),
+      plot.title = element_text(size=13),
+      axis.title = element_text(size = 16),
+     axis.text.y = element_text(size = 12),
+     axis.text.x = element_text(size = 12),
+    # axis.text.x  = element_blank(),
+     legend.key=element_blank(), 
+     # axis.title.x = element_blank(),
+    # axis.title.y = element_blank(),
+     legend.text = element_text(size = 14), 
+     legend.title = element_text(size = 16),
+     legend.margin=margin(0,0,0,0),
+      legend.box.margin=margin(-5,-8,-8,-8),
+    plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt")
+    ) +
+  geom_smooth(method = "lm", se = F,size = .5) + 
+ # geom_vline(xintercept = 0, linetype = "dotted") +
+ labs(
+  y = "Water Potential (MPa)",
+  x = expression("Leaf Mass per Area (g/cm"^2*")")
+) +
+  scale_color_manual(values = c("#CC5265","#165E6F"), 
+                     name = "Time", 
+                     labels = c("Midday", "Predawn")) +
+  scale_shape_manual(values = c(19, 17), 
+                     name = "Time", 
+                     labels = c("Midday", "Predawn")) +
+  guides(color = guide_legend(nrow = 2)) +
+  #scale_x_reverse() +
+scale_y_continuous(labels = scales::number_format(accuracy = 0.1))
+lma_mpa_plot
+
+ggsave(here("figures", "qudo figures", "LWC", "lma_mpa_plot.jpg"), lma_mpa_plot, device = "jpg", width = 6, height = 4, dpi = 600)
+
 ```
 
 ####Using LMA from Al:As: 
@@ -2589,64 +2679,24 @@ anova(m1, m2)
 marginal_r2 <- round(MuMIn::r.squaredGLMM(m1)[1], digits = 3)
 marginal_r2
 
-#look at it:
-data_qudo_lma  %>% 
-  ggplot(aes(y = water_potential, 
-            # y =mpa_mean,
-            x = lma_g_cm2,
-             color = as.factor(time)
-             )) +
-  geom_point(alpha = .5, 
-            # aes (shape = site)
-             ) +
-  theme(legend.position="top",
-       # legend.position= c(.7, .2),
-      strip.background = element_blank(),
-      strip.text.x = element_text(size = 12),
-      plot.title = element_text(size=13),
-      axis.title = element_text(size = 16),
-     axis.text.y = element_text(size = 12),
-     axis.text.x = element_text(size = 12),
-    # axis.text.x  = element_blank(),
-     legend.key=element_blank(), 
-     # axis.title.x = element_blank(),
-    # axis.title.y = element_blank(),
-     legend.text = element_text(size = 13), 
-     legend.title = element_text(size = 16),
-     legend.margin=margin(0,0,0,0),
-      legend.box.margin=margin(-5,-8,-8,-8),
-    plot.margin = unit(c(5.5, 5.5, 0, 5.5), units = "pt")
-    ) +
-  geom_smooth(method = "lm", se = F,size = .5) + 
- # geom_vline(xintercept = 0, linetype = "dotted") +
-  labs(#y= "Middays (MPa)", 
-       y = "Water Potential (MPa)",
-       x = "Leaf Mass per Area (g/cm2)", 
-       color = "Week", 
-       shape = "Site") +
-#  color_many_2 +
- # color_week_assigned +
- # xlim(.5,2) +
- # ylim(-5,0)+
-  guides(color = guide_legend(nrow = 1)) +
-  #scale_x_reverse() +
-scale_y_continuous(labels = scales::number_format(accuracy = 0.1))
-```
 
 #Combine Al:As scans and other scans to up our sample size: 
 
-```{r}
 library(lmerTest) #this gives you a p value
 
 lma_alas_df <- data_qudo_lma %>% select(time, water_potential, lma_g_cm2) %>% 
   rename(mean_mpa = water_potential, 
          lma_g_cm2_new = lma_g_cm2) %>% 
-  mutate(mean_mpa = -1*mean_mpa)
+  mutate(mean_mpa = -1*mean_mpa) %>% 
+  ungroup() %>% 
+  select(-week) %>% 
+  distinct()
+  
 
-lma_df <- bind_rows(lma_alas_df, 
-                         lma_mpa_df %>% 
+lma_df <- bind_rows(lma_alas_df, lma_mpa_df %>% 
                            select(-week)) %>% 
-  filter(lma_g_cm2_new < 0.025)
+  filter(lma_g_cm2_new < 0.025) %>% 
+  distinct() 
 #PD alone: 
 
 lma_mpa_df_pd <- lma_df %>% 
@@ -2684,7 +2734,7 @@ marginal_r2_md <- round(MuMIn::r.squaredGLMM(m2)[1], digits = 3)
 marginal_r2_md
 
 
-lma_mpa_plot <- lma_df %>% 
+lma_mpa_plot_alas <- lma_df %>% 
   ggplot(aes(#y = water_potential, 
              y =-1*mean_mpa,
             x = lma_g_cm2_new,
@@ -2695,17 +2745,18 @@ lma_mpa_plot <- lma_df %>%
             # aes (shape = site)
              ) +
   annotate(geom = "text", 
-           x = .01, 
-           y = -4.75, 
-           color = "#B6D0E2",
-           label = paste("R2 = ", marginal_r2_pd)) +
-  annotate(geom = "text", 
-           x = .01, 
-           y = -5, 
-           color = "#CC5265",
-           label = paste("R2 = ", marginal_r2_md)) +
+         x = .01, 
+         y = -4.75, 
+         color =  "#165E6F",
+         label = bquote(R^2 == .(marginal_r2_pd))) +
+annotate(geom = "text", 
+         x = .01, 
+         y = -5, 
+         color = "#CC5265",
+         label = bquote(R^2 == .(marginal_r2_md))) +
   theme(#legend.position="top",
         legend.position= c(.85, .85),
+        legend.background = element_blank(),
       strip.background = element_blank(),
       strip.text.x = element_text(size = 12),
       plot.title = element_text(size=13),
@@ -2730,7 +2781,7 @@ lma_mpa_plot <- lma_df %>%
       # color = "Week", 
       # shape = "Time"
       ) +
-  scale_color_manual(values = c("#CC5265","#B6D0E2"), 
+  scale_color_manual(values = c("#CC5265","#165E6F"), 
                      name = "Time", 
                      labels = c("Midday", "Predawn")) +
   scale_shape_manual(values = c(19, 17), 
@@ -2739,8 +2790,8 @@ lma_mpa_plot <- lma_df %>%
   guides(color = guide_legend(nrow = 2)) +
   #scale_x_reverse() +
 scale_y_continuous(labels = scales::number_format(accuracy = 0.1))
-lma_mpa_plot
+lma_mpa_plot_alas
 
-ggsave(here("figures", "qudo figures", "LWC", "lma_mpa_plot.jpg"), lma_mpa_plot, device = "jpg", width = 6, height = 4, dpi = 600)
+#ggsave(here("figures", "qudo figures", "LWC", "lma_mpa_plot_alas.jpg"), lma_mpa_plot_alas, device = "jpg", width = 6, height = 4, dpi = 600)
 ```
 
