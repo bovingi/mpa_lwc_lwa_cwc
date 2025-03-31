@@ -750,7 +750,7 @@ space_nice <- wc_wk_centered_df %>%
   guides(color = guide_legend(nrow = 2))
 space_nice
 
-ggsave(here("figures", "qudo figures", "cw_area", "cw_area", "nice_space_cw_area"), space_nice, device = "jpg", width = 6, height = 4, dpi = 300)
+#ggsave(here("figures", "qudo figures", "CWA", "nice_space_cw_area"), space_nice, device = "jpg", width = 6, height = 4, dpi = 300)
 ```
 
 
@@ -1133,7 +1133,7 @@ time <- wc_qudo_df %>%
   color_two_grey
 time 
 
-ggsave(here("figures", "qudo figures", "cw_area", "nice_time"), time, device = "jpg", width = 4, height = 2, dpi = 300)
+#ggsave(here("figures", "qudo figures", "cw_area", "nice_time"), time, device = "jpg", width = 4, height = 2, dpi = 300)
 ```
 
 
@@ -1550,7 +1550,7 @@ ggplot() +
        x = "Time")
 time_summary_sd
 
-ggsave(here("figures", "qudo figures", "cw_area", "time_summary_slopes"), time_summary, device = "jpg", width = 2.5, height = 3, dpi = 300)
+#ggsave(here("figures", "qudo figures", "cw_area", "time_summary_slopes"), time_summary, device = "jpg", width = 2.5, height = 3, dpi = 300)
 ```
 
 ##Slopes, bootstrapping - inds
@@ -1574,7 +1574,7 @@ ggplot() +
 time_summary_bs_tree
 
 
-ggsave(here("figures", "qudo figures", "cw_area", "time_summary_slopes_boot_tree"), time_summary_bs_tree, device = "jpg", width = 2.5, height = 3, dpi = 300)
+#ggsave(here("figures", "qudo figures", "cw_area", "time_summary_slopes_boot_tree"), time_summary_bs_tree, device = "jpg", width = 2.5, height = 3, dpi = 300)
 ```
 
 #MODELS
@@ -2203,5 +2203,5 @@ combined_plots_all_legend <- grid.arrange(arrangeGrob(combined_plots_all,
                                 widths = c(1, .02)))
 combined_plots_all_legend
 
-ggsave(here("figures", "qudo figures", "cw_area", "combined_plots_all_qudo_bs"), combined_plots_all_legend, device = "jpg", width = 10, height = 7, dpi = 300)
+#ggsave(here("figures", "qudo figures", "cw_area", "combined_plots_all_qudo_bs"), combined_plots_all_legend, device = "jpg", width = 10, height = 7, dpi = 300)
 ```

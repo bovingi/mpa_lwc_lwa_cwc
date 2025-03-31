@@ -1234,7 +1234,7 @@ mpa_plot <- fig_data %>%
 mpa_plot
 
 # Save plot
-#ggsave(here::here("figures", "qudo figures", "dcwc_mpa_alldates_SI.jpg"), plot = mpa_plot, width = 10, height = 5)
+#ggsave(here::here("figures", "qudo figures", "dCWC", "dcwc_mpa_alldates_SI.jpg"), plot = mpa_plot, width = 10, height = 5)
 ```
 
 ```{r, eval = F}
@@ -1485,7 +1485,7 @@ final_plot <- dcwc_plot / dcwc_mpa_plot +
 print(final_plot)
 
 # Save plot
-#ggsave(here::here("figures", "qudo figures", "dcwc_SI.jpg"), plot = final_plot, width = 8, height = 8)
+#ggsave(here::here("figures", "qudo figures", "dCWC", "dcwc_SI.jpg"), plot = final_plot, width = 8, height = 8)
 ```
 
 #5. MEAN WATER POTS.
@@ -1808,7 +1808,7 @@ means_plot <- ggplot(df, aes(x = time,
   ggtitle("Q. douglasii")
 means_plot
 
-#ggsave(here::here("figures", "qudo figures", "means_plot_SI.jpg"), plot = means_plot, width = 6.5, height = 8)
+#ggsave(here::here("figures", "qudo figures", "dCWC", "means_plot_SI.jpg"), plot = means_plot, width = 6.5, height = 8)
 
 ```
 
@@ -1926,7 +1926,7 @@ means_plot <- ggplot(df, aes(x = time,
   ggtitle("Q. douglasii")
 means_plot
 
-#ggsave(here::here("figures", "qudo figures", "means_plot_SI.jpg"), plot = means_plot, width = 6.5, height = 8)
+#ggsave(here::here("figures", "qudo figures", "dCWC", "means_plot_SI.jpg"), plot = means_plot, width = 6.5, height = 8)
 ```
 
 
@@ -2157,7 +2157,7 @@ final_plot <- dcwc_plot/ dcwc_mpa_plot +
 print(final_plot)
 
 # Save plot
-#ggsave(here::here("figures", "qudo figures", "dcwc_SI.jpg"), plot = final_plot, width = 8, height = 8, dpi = 600)
+#ggsave(here::here("figures", "qudo figures", "dCWC", "dcwc_SI.jpg"), plot = final_plot, width = 8, height = 8, dpi = 600)
 ```
 
 #TO COMBINE: 
@@ -2310,5 +2310,5 @@ final_plot <- dcwc_plot/ dcwc_mpa_plot +
 print(final_plot)
 
 # Save plot
-#ggsave(here::here("figures", "qudo figures", "dcwc_combinespp_SI.jpg"), plot = final_plot, width = 6.5, height = 8, dpi = 600)
+#ggsave(here::here("figures", "qudo figures", "dCWC", "dcwc_combinespp_SI.jpg"), plot = final_plot, width = 6.5, height = 8, dpi = 600)
 ```
