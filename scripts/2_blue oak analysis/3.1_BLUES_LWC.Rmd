@@ -1454,7 +1454,7 @@ write_csv(lwc_mean_mods, here::here("processed-data", "model results", "lwc_mean
 
 #*!START HERE FOR JUST FIG CHANGES!
 ```{r}
-data_qudo_raw <- read_csv(here::here("processed-data", paste0("analysis",datver,".csv")), show_col_types = FALSE) %>% 
+data_qudo_raw <- read_csv(here::here("data", paste0("analysis",datver,".csv")), show_col_types = FALSE) %>% 
  # filter(species == "live oak") %>% 
   distinct() %>% 
  # group_by(week, time) %>% 
@@ -2486,7 +2486,7 @@ ggsave(here("figures", "qudo figures", "LWC", "combined_plots_all_qudo_bs.jpg"),
 - PD and MD together with time as a predictor: 
 
 ```{r}
-lma_mpa_df <- read_csv(here::here("processed-data", "wp_wc_df.csv")) %>% 
+lma_mpa_df <- read_csv(here::here("data", "wp_wc_df.csv")) %>% 
   filter(species == "blue oak") %>% 
   select(lma_g_cm2_new, time, tree, mean_mpa, week) %>% 
   mutate(week = as.factor(week)) %>% 

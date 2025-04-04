@@ -27,7 +27,7 @@ dataversion <- paste0("Data_", datver)
 
 #DATA: 
 ```{r}
-data_quag_raw <- read_csv(here::here("processed-data", paste0("analysis_bothspp",datver,".csv")), show_col_types = FALSE) %>% 
+data_quag_raw <- read_csv(here::here("data", paste0("analysis_bothspp",datver,".csv")), show_col_types = FALSE) %>% 
   filter(species == "live oak") %>% 
   distinct() %>% 
   group_by(week, time) %>% 
@@ -2368,7 +2368,7 @@ write_csv(lwa_g_cm2_new_mods, here::here("processed-data", "lwa_g_cm2_new_quag_m
 ```{r}
 final_df_all <- read_csv(here::here("processed-data", "bootstrapped_df_quag_lwa_g_cm2_new.csv"))
 
-data_quag_raw <- read_csv(here::here("processed-data", paste0("analysis_bothspp",datver,".csv")), show_col_types = FALSE) %>% 
+data_quag_raw <- read_csv(here::here("data", paste0("analysis_bothspp",datver,".csv")), show_col_types = FALSE) %>% 
   filter(species == "live oak") %>% 
   distinct() %>% 
   group_by(week, time) %>% 

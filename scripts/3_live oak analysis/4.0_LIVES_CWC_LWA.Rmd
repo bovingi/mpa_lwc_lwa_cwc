@@ -34,7 +34,7 @@ data_lwa_cwc <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".c
   filter(!week %in% c(11, 9)) #week 11 only has 9 midday measurements and acts really odd (2022-03-15), 9 just had 3 measurements 
 
 #LWA data: 
-data_og_lwa  <- read_csv(here::here("processed-data", paste0("analysis_bothspp",datver,".csv")), show_col_types = FALSE) %>% 
+data_og_lwa  <- read_csv(here::here("data", paste0("analysis_bothspp",datver,".csv")), show_col_types = FALSE) %>% 
   filter(species == "live oak") %>% 
   distinct() %>% 
   group_by(week, time) %>% 

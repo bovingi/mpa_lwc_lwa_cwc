@@ -39,7 +39,7 @@ source(here::here("scripts", "scripts_functions", "figure_info.R"))
 #Data wrangling: 
 
 ```{r}
-pv_new_rr_raw <- read_csv(here("final_data", "pv_curves_long_rayna.csv"), show_col_types = FALSE) %>% 
+pv_new_rr_raw <- read_csv(here("data", "pv_curves_long_rayna.csv"), show_col_types = FALSE) %>% 
   clean_names()%>% 
   group_by(date, tree, rehydrated, pd_or_md) %>% 
   fill(c(stem_dry_wt_g, leaves_dry_wt_g, total_nonsample_wt, leaf_area), .direction = "downup") %>% 
@@ -82,7 +82,7 @@ df
 KK:
 
 ```{r}
-pv_new_kk_raw <- read_csv(here("final_data", "pv_shift_kk.csv"), show_col_types = FALSE) %>%
+pv_new_kk_raw <- read_csv(here("data", "pv_shift_kk.csv"), show_col_types = FALSE) %>%
   clean_names() %>%
   # mutate(fresh_mass_saturated = case_when(
   #   fresh_mass_saturated > 4 ~ fresh_mass_saturated - 2.906,
@@ -445,7 +445,7 @@ pv_swc
 #-------
 Older: 
 ```{r, echo=F}
-pv_all_raw<- read_csv(here("final_data", "pv_curves_long.csv"), show_col_types = FALSE) %>% 
+pv_all_raw<- read_csv(here("data", "pv_curves_long.csv"), show_col_types = FALSE) %>% 
   clean_names() %>% 
   rename(neg_mpa = x1_mpa, 
          rwd = x100_rwc) %>% 

@@ -687,7 +687,7 @@ dcwc_justmay1 <- read_csv(here("processed-data", "dcwc_qudo_justmay_df_no_outlie
   mutate(analysis = "just may")
 
 #lma, mpa, and lwmass and lwarea data: 
-data_qudo_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
+data_qudo_lma <- read_csv(here("data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
  # filter(time %in% c("md")) %>% 
   group_by(tree, week) %>% 
   mutate(lma_g_cm2 = mean(lma_g_cm2, na.rm = T), 

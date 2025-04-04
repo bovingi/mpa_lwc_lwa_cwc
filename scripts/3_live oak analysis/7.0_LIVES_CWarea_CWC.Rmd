@@ -53,7 +53,7 @@ data_og_cwc <- read_csv(here("processed-data", paste0("cwc_analysis",datver,".cs
   filter(!week %in% c(11, 9, 18)) #week 11 only has 9 midday measurements and acts really odd (2022-03-15), 9 just had 3 measurements 
 
 ##LMA, LWA, LWC data: 
-data_quag_lma <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
+data_quag_lma <- read_csv(here("data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
  # filter(time %in% c("md")) %>% 
   group_by(tree, week) %>% 
   mutate(lwa_g_cm2 = lwa_g_cm2_new, #use the 'new' version, increases sample size because this includes estimates from bulk data.
@@ -77,12 +77,12 @@ df0 <- merge(data_quag_lma, data_og_cwc,
 
 ##LAI data: 
 
-data_quag_lai_spring <-  read_csv(here("final_data", "LAI_final.csv")) %>% 
+data_quag_lai_spring <-  read_csv(here("data", "LAI_final.csv")) %>% 
   clean_names() %>% 
   select(treestr, springlai) %>% 
   mutate(tree = as.numeric(treestr))
 
-lai_raw <-  read_csv(here("final_data", "LAI_final.csv")) %>% 
+lai_raw <-  read_csv(here("data", "LAI_final.csv")) %>% 
   clean_names() %>% 
   select(-difflai, -species, -springstdev)
 

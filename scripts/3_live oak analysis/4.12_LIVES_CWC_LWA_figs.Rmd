@@ -424,7 +424,7 @@ ggsave(here("figures", "quag figures", "slopes_space_time_quag"), quag_plot_slop
 ```{r, fig.height=2, fig.width=6}
 ##USE THIS ONE: 
 #lma_plot <- data_qudo_raw %>% 
-lma_plot_df <- read_csv(here("processed-data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
+lma_plot_df <- read_csv(here("data", paste0("wp_wc_rwc_",datver,".csv"))) %>% 
   filter(year_alas %in% c(0), 
          year_rwc %in% c(0))
 
