@@ -896,12 +896,19 @@ wk_all_long <- merge(wk_all_long_mpa, wk_all_long_lwa_g_cm2_new) %>%
   group_by(tree, week, time, site) %>% 
   summarise(lwa_g_cm2_new = mean(lwa_g_cm2_new, na.rm = T), 
             water_potential = mean(water_potential, na.rm = T))
+
+wk_all1 <- wk_all %>% 
+  distinct() %>% 
+ # select(-lwa_g_cm2_new_NA, -water_potential_NA) %>% 
+  group_by(tree, week, time, site) %>% 
+  summarise(lwa_g_cm2_new = mean(lwa_g_cm2_new, na.rm = T), 
+            water_potential = mean(water_potential, na.rm = T))
 ```
 
 #####Layered
 
 ```{r, echo=FALSE, fig.height= 5, fig.width= 10}
-wk_figs <- wk_all_long %>% 
+wk_figs <- wk_all1 %>% 
   filter(week %in% c(10, 14, 17, 19, 21, 29, 33, 37), 
          #lwa_g_cm2_new < 6, 
         # lwa_g_cm2_new > 0
@@ -2501,7 +2508,7 @@ nice_hydration_layered_1 <- ggplot() +
                     '33')) +
     labs(y = "Water Potential (MPa)", 
          #y = " ",
-       x = "Leaf Water Content (g)", 
+       x = "Leaf Water/Area (g)", 
        color= "Week", 
        shape = "Time"
        #caption = "triangles = predawn, circles = midday"
@@ -2523,7 +2530,7 @@ nice_hydration_layered_1 <- ggplot() +
   legend.title = element_text(size = 14), 
   legend.text = element_text(size = 14), 
 # legend.position = "none"
-  ) +
+  ) #\+
    #ylim(-5,0)+
    #xlim(.5,2) +
   #scale_x_reverse() +
@@ -3569,7 +3576,7 @@ combined_plots_all <- cowplot::plot_grid(
 
 combined_plots_all
 
-ggsave(here::here("figures", "quag figures", "LWA", "combined_plots_all_quag_new_bs"), combined_plots_all, device = "jpg", width = 12, height = 7, dpi = 300)
+ggsave(file = here::here("figures", "quag figures", "LWA", "combined_plots_all_quag_new_bs.jpg"), plot = combined_plots_all, device = "jpeg", width = 12, height = 7, dpi = 300)
 ```
 
 #------
